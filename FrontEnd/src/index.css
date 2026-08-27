@@ -1,0 +1,239 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+/* ===========================
+   NEO-BRUTALIST DESIGN TOKENS
+   =========================== */
+:root {
+  --cream: #FFFBF0;
+  --cream-dark: #F5EED8;
+  --pink: #FF3CAC;
+  --pink-light: #FF85D1;
+  --yellow: #FFD60A;
+  --yellow-dark: #E6BE00;
+  --blue: #2563EB;
+  --blue-light: #60A5FA;
+  --green: #22C55E;
+  --red: #EF4444;
+  --purple: #7C3AED;
+  --orange: #F97316;
+  --black: #0A0A0A;
+  --gray: #6B7280;
+  --gray-light: #E5E7EB;
+  --shadow-sm: 3px 3px 0px #0A0A0A;
+  --shadow-md: 4px 4px 0px #0A0A0A;
+  --shadow-lg: 6px 6px 0px #0A0A0A;
+  --shadow-xl: 8px 8px 0px #0A0A0A;
+  --border: 2px solid #0A0A0A;
+  --border-thick: 3px solid #0A0A0A;
+  --border-thicker: 4px solid #0A0A0A;
+  --radius: 12px;
+  --radius-lg: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background-color: var(--cream);
+  color: var(--black);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  /* Subtle dot pattern */
+  background-image: radial-gradient(circle, #d4c9a8 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ===========================
+   UTILITY CLASSES
+   =========================== */
+.neo-card {
+  background: white;
+  border: var(--border-thick);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.neo-card-cream {
+  background: var(--cream);
+  border: var(--border-thick);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.neo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: var(--border-thick);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-decoration: none;
+  background: white;
+  color: var(--black);
+}
+
+.neo-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #0A0A0A;
+}
+
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #0A0A0A;
+}
+
+.neo-btn-pink {
+  background: var(--pink);
+  color: white;
+}
+
+.neo-btn-yellow {
+  background: var(--yellow);
+  color: var(--black);
+}
+
+.neo-btn-blue {
+  background: var(--blue);
+  color: white;
+}
+
+.neo-btn-green {
+  background: var(--green);
+  color: white;
+}
+
+/* Font utility */
+.font-mono {
+  font-family: 'Space Mono', monospace;
+}
+
+/* Doodle divider */
+.doodle-line {
+  border: none;
+  border-top: 3px dashed #0A0A0A;
+  opacity: 0.3;
+  margin: 16px 0;
+}
+
+/* Wiggle animation */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+/* Bounce animation */
+@keyframes bounce-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* Pop animation for correct answers */
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Pulse glow */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 4px 4px 0px #0A0A0A; }
+  50% { box-shadow: 4px 4px 0px var(--pink); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+.animate-pop {
+  animation: pop 0.3s ease-in-out;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.4s ease-out forwards;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+/* Sticker badge */
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--black);
+  border-radius: 50%;
+  box-shadow: 3px 3px 0px var(--black);
+  font-size: 1.5rem;
+}
+
+/* Number input cells */
+.sudoku-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.1s ease, transform 0.1s ease;
+  position: relative;
+  user-select: none;
+}
+
+.sudoku-cell:hover:not(.given):not(.disabled) {
+  background: rgba(255, 60, 172, 0.08) !important;
+}
+
+.sudoku-cell.selected {
+  background: var(--yellow) !important;
+  transform: scale(0.95);
+}
+
+.sudoku-cell.highlighted {
+  background: rgba(255, 214, 10, 0.25) !important;
+}
+
+.sudoku-cell.same-value {
+  background: rgba(255, 60, 172, 0.15) !important;
+}
+
+.sudoku-cell.given {
+  background: var(--cream-dark);
+  color: var(--black);
+}
+
+.sudoku-cell.user-entered {
+  color: var(--blue);
+}
+
+.sudoku-cell.error {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: var(--red) !important;
+}
+
+/* Responsive breakpoints hint for JS */
+:root {
+  --mobile-max: 640px;
+  --tablet-max: 1024px;
+}

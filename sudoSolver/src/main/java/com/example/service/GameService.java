@@ -35,7 +35,6 @@ public class GameService {
         int[][] currentBoard = copyBoard(puzzle);
 
         String gameId = UUID.randomUUID().toString();
-        System.out.println(gameId);
 
         Game game = new Game(
                 gameId,
