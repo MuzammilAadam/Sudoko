@@ -240,6 +240,7 @@ export default function GamePage() {
   } = state;
 
   const boardDisabled = gameStatus === 'GAME_OVER' || gameStatus === 'COMPLETED' || paused;
+  const controlsDisabled = gameStatus === 'GAME_OVER' || gameStatus === 'COMPLETED';
   const remainingCounts = computeRemainingCounts(currentBoard);
 
   return (
@@ -411,7 +412,7 @@ export default function GamePage() {
                   </div>
                 )}
 
-                {paused && !boardDisabled ? (
+                {paused ? (
                   <div
                     style={{
                       border: '4px solid #0A0A0A',
@@ -468,7 +469,7 @@ export default function GamePage() {
                 onNewGame={() => handleNewGame(difficulty)}
                 notesActive={notesMode}
                 paused={paused}
-                disabled={boardDisabled}
+                disabled={controlsDisabled}
               />
 
               {/* Quick tips card */}
