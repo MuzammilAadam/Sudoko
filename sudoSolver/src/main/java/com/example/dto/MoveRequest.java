@@ -1,22 +1,10 @@
-package com.example.model;
+package com.example.dto;
 
 public class MoveRequest {
 
-    private int[][] board;
     private int row;
     private int col;
     private int value;
-
-    public MoveRequest() {
-    }
-
-    public int[][] getBoard() {
-        return board;
-    }
-
-    public void setBoard(int[][] board) {
-        this.board = board;
-    }
 
     public int getRow() {
         return row;

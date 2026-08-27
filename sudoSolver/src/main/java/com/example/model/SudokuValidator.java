@@ -10,26 +10,32 @@ public class SudokuValidator {
 
         // Check row
         for (int i = 0; i < board[0].length; i++) {
-            if (board[row][i] == value) {
+
+            if (i != col && board[row][i] == value) {
                 return false;
             }
         }
 
         // Check column
         for (int i = 0; i < board.length; i++) {
-            if (board[i][col] == value) {
+
+            if (i != row && board[i][col] == value) {
                 return false;
             }
         }
 
-        // Check 3x3 grid
+        // Find starting position of 3x3 box
         int startRow = (row / 3) * 3;
         int startCol = (col / 3) * 3;
 
+        // Check 3x3 box
         for (int i = startRow; i < startRow + 3; i++) {
+
             for (int j = startCol; j < startCol + 3; j++) {
 
-                if (board[i][j] == value) {
+                if ((i != row || j != col)
+                        && board[i][j] == value) {
+
                     return false;
                 }
             }
