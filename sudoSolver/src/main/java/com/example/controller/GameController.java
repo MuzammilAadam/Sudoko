@@ -1,5 +1,6 @@
 package com.example.controller;
 
+import com.example.dto.CreateGameRequest;
 import com.example.dto.MoveRequest;
 import com.example.dto.MoveResponse;
 import com.example.model.Game;
@@ -19,9 +20,19 @@ public class GameController {
     }
 
     @PostMapping
-    public ResponseEntity<Game> createGame() {
+    public ResponseEntity<Game> createGame(
+            @RequestBody(required = false)
+            CreateGameRequest request) {
 
-        Game game = gameService.createGame();
+        String difficulty = "EASY";
+
+        if (request != null
+                && request.getDifficulty() != null) {
+            difficulty = request.getDifficulty();
+        }
+
+        Game game =
+                gameService.createGame(difficulty);
 
         return ResponseEntity.ok(game);
     }
@@ -32,7 +43,10 @@ public class GameController {
             @RequestBody MoveRequest request) {
 
         MoveResponse response =
-                gameService.makeMove(gameId, request);
+                gameService.makeMove(
+                        gameId,
+                        request
+                );
 
         return ResponseEntity.ok(response);
     }

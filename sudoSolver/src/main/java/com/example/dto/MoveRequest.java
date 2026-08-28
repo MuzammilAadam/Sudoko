@@ -3,7 +3,9 @@ package com.example.dto;
 public class MoveRequest {
 
     private int row;
+
     private int col;
+
     private int value;
 
     public int getRow() {

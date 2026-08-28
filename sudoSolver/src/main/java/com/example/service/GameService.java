@@ -2,9 +2,9 @@ package com.example.service;
 
 import com.example.dto.MoveRequest;
 import com.example.dto.MoveResponse;
+import com.example.generator.SudokuGenerator;
 import com.example.model.Game;
 import com.example.model.GameStatus;
-import com.example.model.SudokuValidator;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -14,32 +14,34 @@ import java.util.UUID;
 @Service
 public class GameService {
 
-    private final SudokuValidator validator = new SudokuValidator();
+    private final SudokuGenerator sudokuGenerator;
 
     private final Map<String, Game> games = new HashMap<>();
 
-    public Game createGame() {
+    public GameService(SudokuGenerator sudokuGenerator) {
+        this.sudokuGenerator = sudokuGenerator;
+    }
 
-        int[][] puzzle = {
-                {5, 3, 0, 0, 7, 0, 0, 0, 0},
-                {6, 0, 0, 1, 9, 5, 0, 0, 0},
-                {0, 9, 8, 0, 0, 0, 0, 6, 0},
-                {8, 0, 0, 0, 6, 0, 0, 0, 3},
-                {4, 0, 0, 8, 0, 3, 0, 0, 1},
-                {7, 0, 0, 0, 2, 0, 0, 0, 6},
-                {0, 6, 0, 0, 0, 0, 2, 8, 0},
-                {0, 0, 0, 4, 1, 9, 0, 0, 5},
-                {0, 0, 0, 0, 8, 0, 0, 7, 9}
-        };
+    public Game createGame(String difficulty) {
 
-        int[][] currentBoard = copyBoard(puzzle);
+        if (difficulty == null || difficulty.isBlank()) {
+            difficulty = "EASY";
+        }
 
-        String gameId = UUID.randomUUID().toString();
+        int[][] puzzle =
+                sudokuGenerator.generate(difficulty);
+
+        int[][] solution =
+                sudokuGenerator.generateSolution(puzzle);
+
+        String gameId =
+                UUID.randomUUID().toString();
 
         Game game = new Game(
                 gameId,
+                difficulty.toUpperCase(),
                 puzzle,
-                currentBoard
+                solution
         );
 
         games.put(gameId, game);
@@ -53,7 +55,9 @@ public class GameService {
 
         Game game = games.get(gameId);
 
+        // Game doesn't exist
         if (game == null) {
+
             return new MoveResponse(
                     false,
                     "Game not found",
@@ -65,6 +69,7 @@ public class GameService {
             );
         }
 
+        // Game already ended
         if (game.getStatus() != GameStatus.ACTIVE) {
 
             return new MoveResponse(
@@ -82,61 +87,52 @@ public class GameService {
         int col = request.getCol();
         int value = request.getValue();
 
-        // Validate position
-        if (row < 0 || row >= 9 || col < 0 || col >= 9) {
+        // Validate row
+        if (row < 0 || row >= 9) {
 
-            return new MoveResponse(
-                    false,
-                    "Invalid cell position",
-                    game.getCurrentBoard(),
-                    game.getMistakes(),
-                    game.getRemainingChances(),
-                    false,
-                    false
+            return invalidRequest(
+                    game,
+                    "Row must be between 0 and 8"
             );
         }
 
-        // Validate value
+        // Validate column
+        if (col < 0 || col >= 9) {
+
+            return invalidRequest(
+                    game,
+                    "Column must be between 0 and 8"
+            );
+        }
+
+        // Validate number
         if (value < 1 || value > 9) {
 
-            return new MoveResponse(
-                    false,
-                    "Value must be between 1 and 9",
-                    game.getCurrentBoard(),
-                    game.getMistakes(),
-                    game.getRemainingChances(),
-                    false,
-                    false
+            return invalidRequest(
+                    game,
+                    "Value must be between 1 and 9"
             );
         }
 
-        // Check whether the cell is an original puzzle cell
+        // Original cell cannot be changed
         if (game.getPuzzle()[row][col] != 0) {
 
-            return new MoveResponse(
-                    false,
-                    "This cell cannot be changed",
-                    game.getCurrentBoard(),
-                    game.getMistakes(),
-                    game.getRemainingChances(),
-                    false,
-                    false
+            return invalidRequest(
+                    game,
+                    "This cell cannot be changed"
             );
         }
 
-        // Check Sudoku rules
-        boolean valid = validator.isValidMove(
-                game.getCurrentBoard(),
-                row,
-                col,
-                value
-        );
+        // Check whether move is correct
+        boolean valid =
+                game.getSolution()[row][col] == value;
 
         if (!valid) {
 
             game.increaseMistakes();
             game.decreaseChance();
 
+            // Third mistake
             if (game.getRemainingChances() == 0) {
 
                 game.setStatus(GameStatus.GAME_OVER);
@@ -154,7 +150,7 @@ public class GameService {
 
             return new MoveResponse(
                     false,
-                    "Invalid move",
+                    "Wrong move",
                     game.getCurrentBoard(),
                     game.getMistakes(),
                     game.getRemainingChances(),
@@ -166,8 +162,9 @@ public class GameService {
         // Correct move
         game.getCurrentBoard()[row][col] = value;
 
-        // Check whether the puzzle is completed
-        boolean completed = isCompleted(game.getCurrentBoard());
+        // Check completion
+        boolean completed =
+                isCompleted(game.getCurrentBoard());
 
         if (completed) {
             game.setStatus(GameStatus.COMPLETED);
@@ -175,7 +172,9 @@ public class GameService {
 
         return new MoveResponse(
                 true,
-                completed ? "Congratulations! Sudoku completed." : "Correct move",
+                completed
+                        ? "Congratulations! Sudoku completed."
+                        : "Correct move",
                 game.getCurrentBoard(),
                 game.getMistakes(),
                 game.getRemainingChances(),
@@ -186,11 +185,11 @@ public class GameService {
 
     private boolean isCompleted(int[][] board) {
 
-        for (int i = 0; i < board.length; i++) {
+        for (int row = 0; row < 9; row++) {
 
-            for (int j = 0; j < board[i].length; j++) {
+            for (int col = 0; col < 9; col++) {
 
-                if (board[i][j] == 0) {
+                if (board[row][col] == 0) {
                     return false;
                 }
             }
@@ -199,14 +198,18 @@ public class GameService {
         return true;
     }
 
-    private int[][] copyBoard(int[][] board) {
+    private MoveResponse invalidRequest(
+            Game game,
+            String message) {
 
-        int[][] copy = new int[board.length][];
-
-        for (int i = 0; i < board.length; i++) {
-            copy[i] = board[i].clone();
-        }
-
-        return copy;
+        return new MoveResponse(
+                false,
+                message,
+                game.getCurrentBoard(),
+                game.getMistakes(),
+                game.getRemainingChances(),
+                false,
+                false
+        );
     }
 }

@@ -3,11 +3,17 @@ package com.example.dto;
 public class MoveResponse {
 
     private boolean valid;
+
     private String message;
+
     private int[][] board;
+
     private int mistakes;
+
     private int remainingChances;
+
     private boolean gameOver;
+
     private boolean completed;
 
     public MoveResponse(

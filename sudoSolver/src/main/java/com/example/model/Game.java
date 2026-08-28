@@ -4,7 +4,11 @@ public class Game {
 
     private String gameId;
 
+    private String difficulty;
+
     private int[][] puzzle;
+
+    private int[][] solution;
 
     private int[][] currentBoard;
 
@@ -16,12 +20,15 @@ public class Game {
 
     public Game(
             String gameId,
+            String difficulty,
             int[][] puzzle,
-            int[][] currentBoard) {
+            int[][] solution) {
 
         this.gameId = gameId;
+        this.difficulty = difficulty;
         this.puzzle = puzzle;
-        this.currentBoard = currentBoard;
+        this.solution = solution;
+        this.currentBoard = copyBoard(puzzle);
 
         this.mistakes = 0;
         this.remainingChances = 3;
@@ -32,39 +39,54 @@ public class Game {
         return gameId;
     }
 
+    public String getDifficulty() {
+        return difficulty;
+    }
+
     public int[][] getPuzzle() {
         return puzzle;
+    }
+
+    public int[][] getSolution() {
+        return solution;
     }
 
     public int[][] getCurrentBoard() {
         return currentBoard;
     }
 
-    public void setCurrentBoard(int[][] currentBoard) {
-        this.currentBoard = currentBoard;
-    }
-
     public int getMistakes() {
         return mistakes;
-    }
-
-    public void increaseMistakes() {
-        this.mistakes++;
     }
 
     public int getRemainingChances() {
         return remainingChances;
     }
 
-    public void decreaseChance() {
-        this.remainingChances--;
-    }
-
     public GameStatus getStatus() {
         return status;
     }
 
+    public void increaseMistakes() {
+        mistakes++;
+    }
+
+    public void decreaseChance() {
+        remainingChances--;
+    }
+
     public void setStatus(GameStatus status) {
         this.status = status;
+    }
+
+    private int[][] copyBoard(int[][] board) {
+
+        int[][] copy = new int[9][9];
+
+        for (int i = 0; i < 9; i++) {
+            copy[i] = board[i].clone();
+        }
+
+        return copy;
     }
 }
