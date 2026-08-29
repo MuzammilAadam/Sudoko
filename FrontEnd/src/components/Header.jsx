@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Grid3x3, Trophy, Award, BookOpen, Skull } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Grid3x3, Trophy, Award, BookOpen, LogOut, User } from 'lucide-react';
+import { clearAuth, getUsername, isAuthenticated } from '../services/authApi';
 
 const NAV_LINKS = [
   { label: 'Classic', to: '/', icon: <Grid3x3 size={16} /> },
@@ -12,6 +13,15 @@ const NAV_LINKS = [
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const authenticated = isAuthenticated();
+  const username = getUsername();
+
+  const handleLogout = () => {
+    clearAuth();
+    setMenuOpen(false);
+    navigate('/login', { replace: true });
+  };
 
   return (
     <header
@@ -118,6 +128,61 @@ export default function Header() {
               </Link>
             );
           })}
+
+          {/* Desktop: user info + logout */}
+          {authenticated && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px' }}>
+              {/* Username badge */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '6px 12px',
+                  border: '2px solid #0A0A0A',
+                  borderRadius: '8px',
+                  background: '#F5EED8',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  boxShadow: '2px 2px 0 #0A0A0A',
+                }}
+              >
+                <User size={14} />
+                {username}
+              </div>
+              {/* Logout button */}
+              <button
+                id="header-logout-btn"
+                onClick={handleLogout}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  border: '2px solid #0A0A0A',
+                  borderRadius: '8px',
+                  background: '#FFD60A',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '3px 3px 0 #0A0A0A',
+                  transition: 'all 0.1s ease',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translate(-2px,-2px)';
+                  e.currentTarget.style.boxShadow = '5px 5px 0 #0A0A0A';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translate(0,0)';
+                  e.currentTarget.style.boxShadow = '3px 3px 0 #0A0A0A';
+                }}
+              >
+                <LogOut size={14} />
+                Logout
+              </button>
+            </div>
+          )}
         </nav>
 
         {/* Mobile hamburger */}
@@ -168,6 +233,55 @@ export default function Header() {
               </Link>
             );
           })}
+
+          {/* Mobile: user info + logout */}
+          {authenticated && (
+            <>
+              {/* Username pill */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  marginBottom: '8px',
+                  marginTop: '4px',
+                  border: '2px solid #0A0A0A',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  background: '#F5EED8',
+                  boxShadow: '3px 3px 0 #0A0A0A',
+                }}
+              >
+                <User size={16} />
+                {username}
+              </div>
+              {/* Logout */}
+              <button
+                id="mobile-logout-btn"
+                onClick={handleLogout}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 16px',
+                  width: '100%',
+                  border: '2px solid #0A0A0A',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  background: '#FFD60A',
+                  boxShadow: '3px 3px 0 #0A0A0A',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                }}
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
+            </>
+          )}
         </div>
       )}
     </header>

@@ -7,11 +7,14 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 /**
  * Generic request helper.
+ * Automatically attaches the JWT Bearer token from localStorage if present.
  */
 async function request(path, options = {}) {
   const url = `${BASE_URL}${path}`;
+  const token = localStorage.getItem('sudoku_jwt');
+  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
   const response = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    headers: { 'Content-Type': 'application/json', ...authHeader, ...(options.headers || {}) },
     ...options,
   });
 
