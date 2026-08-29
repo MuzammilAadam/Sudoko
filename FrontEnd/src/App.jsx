@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
 import Game from './pages/Game';
+import MyScores from './pages/MyScores';
 import Leaderboard from './pages/Leaderboard';
 import Awards from './pages/Awards';
 import Rules from './pages/Rules';
@@ -25,6 +26,7 @@ function AppLayout() {
 
         {/* Protected routes */}
         <Route path="/" element={<ProtectedRoute><Game /></ProtectedRoute>} />
+        <Route path="/my-scores" element={<ProtectedRoute><MyScores /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
         <Route path="/awards" element={<ProtectedRoute><Awards /></ProtectedRoute>} />
         <Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />

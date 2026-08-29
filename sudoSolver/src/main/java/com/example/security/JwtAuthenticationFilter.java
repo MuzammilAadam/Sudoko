@@ -87,9 +87,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         "ROLE_" + user.getRole().name()
                 );
 
+        // BUG FIX / CORRECTION:
+        // Previously, 'user' (the User entity object) was passed as the principal here.
+        // Because User does not implement Principal or UserDetails, calling authentication.getName()
+        // later fell back to user.toString(), returning "com.example.entity.User@<hashcode>".
+        // Passing user.getEmail() as the principal ensures authentication.getName() returns the actual email address.
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        user,
+                        user.getEmail(),
                         null,
                         List.of(authority)
                 );

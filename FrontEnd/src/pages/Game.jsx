@@ -6,7 +6,7 @@ import NumberPad from '../components/NumberPad';
 import GameControls from '../components/GameControls';
 import GameOverModal from '../components/GameOverModal';
 import CompletionModal from '../components/CompletionModal';
-import { createGame, makeMove } from '../services/sudokuApi';
+import { createGame, makeMove, submitScore } from '../services/sudokuApi';
 import { Loader2, AlertCircle, Zap } from 'lucide-react';
 
 // ─── Initial state ───────────────────────────────────────────
@@ -42,6 +42,9 @@ export default function GamePage() {
   const [state, setState] = useState(INITIAL_STATE);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [submittedScore, setSubmittedScore] = useState(null);
+  const [scoreLoading, setScoreLoading] = useState(false);
+  const [scoreError, setScoreError] = useState(null);
   const timerRef = useRef(null);
 
   // ─── Timer management ────────────────────────────────────────
@@ -56,10 +59,44 @@ export default function GamePage() {
     return () => clearInterval(timerRef.current);
   }, [state.gameStatus, state.paused]);
 
+  // ─── Score submission on game completion ────────────────────
+  useEffect(() => {
+    if (state.gameStatus === 'COMPLETED' && submittedScore === null && !scoreLoading && !scoreError) {
+      let isMounted = true;
+      setScoreLoading(true);
+      setScoreError(null);
+
+      submitScore({
+        difficulty: state.difficulty,
+        mistakes: state.mistakes,
+        timeTaken: state.timerSeconds,
+      })
+        .then((data) => {
+          if (isMounted) {
+            setSubmittedScore(data?.score ?? data?.finalScore ?? data?.points ?? 0);
+            setScoreLoading(false);
+          }
+        })
+        .catch((err) => {
+          if (isMounted) {
+            setScoreError(err.message || 'Could not save score');
+            setScoreLoading(false);
+          }
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [state.gameStatus, state.difficulty, state.mistakes, state.timerSeconds, submittedScore, scoreLoading, scoreError]);
+
   // ─── Create new game ─────────────────────────────────────────
   const handleNewGame = useCallback(async (difficultyOverride) => {
     setLoading(true);
     setApiError(null);
+    setSubmittedScore(null);
+    setScoreLoading(false);
+    setScoreError(null);
     const diff = difficultyOverride || state.difficulty;
     try {
       const data = await createGame(diff);
@@ -503,6 +540,9 @@ export default function GamePage() {
       )}
       {gameStatus === 'COMPLETED' && (
         <CompletionModal
+          score={submittedScore}
+          scoreLoading={scoreLoading}
+          scoreError={scoreError}
           mistakes={mistakes}
           timerSeconds={timerSeconds}
           difficulty={difficulty}

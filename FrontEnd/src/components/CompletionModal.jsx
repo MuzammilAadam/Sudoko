@@ -1,15 +1,26 @@
-import { Trophy, RotateCcw, BarChart2 } from 'lucide-react';
+import { Trophy, RotateCcw, BarChart2, Star, Loader2, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 /**
  * CompletionModal — shown when puzzle is solved.
  * Props:
+ *  score        - number | null
+ *  scoreLoading - boolean
+ *  scoreError   - string | null
  *  mistakes     - number
  *  timerSeconds - number
  *  difficulty   - string
  *  onNewGame    - () => void
  */
-export default function CompletionModal({ mistakes = 0, timerSeconds = 0, difficulty = 'MEDIUM', onNewGame }) {
+export default function CompletionModal({
+  score = null,
+  scoreLoading = false,
+  scoreError = null,
+  mistakes = 0,
+  timerSeconds = 0,
+  difficulty = 'MEDIUM',
+  onNewGame,
+}) {
   const mm = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
   const ss = String(timerSeconds % 60).padStart(2, '0');
   const perfect = mistakes === 0;
@@ -19,7 +30,7 @@ export default function CompletionModal({ mistakes = 0, timerSeconds = 0, diffic
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(10,10,10,0.75)',
+        background: 'rgba(10,10,10,0.8)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -31,8 +42,8 @@ export default function CompletionModal({ mistakes = 0, timerSeconds = 0, diffic
         className="neo-card animate-bounce-in"
         style={{
           background: 'white',
-          padding: '40px 32px',
-          maxWidth: '420px',
+          padding: '36px 28px',
+          maxWidth: '440px',
           width: '100%',
           textAlign: 'center',
           position: 'relative',
@@ -45,45 +56,101 @@ export default function CompletionModal({ mistakes = 0, timerSeconds = 0, diffic
         {/* Trophy Icon */}
         <div
           style={{
-            width: '88px',
-            height: '88px',
+            width: '80px',
+            height: '80px',
             border: '4px solid #0A0A0A',
             borderRadius: '50%',
             background: '#FFD60A',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 20px',
+            margin: '0 auto 16px',
             boxShadow: '5px 5px 0 #0A0A0A',
           }}
         >
-          <Trophy size={44} color="#0A0A0A" />
+          <Trophy size={40} color="#0A0A0A" />
         </div>
 
         <h2
           style={{
             fontFamily: "'Space Mono', monospace",
             fontWeight: 700,
-            fontSize: '1.8rem',
+            fontSize: '1.7rem',
             marginBottom: '4px',
           }}
         >
           {perfect ? '🎉 PERFECT!' : '✅ SOLVED!'}
         </h2>
 
-        <p style={{ color: '#6B7280', marginBottom: '24px', fontWeight: 500 }}>
+        <p style={{ color: '#6B7280', marginBottom: '20px', fontWeight: 500, fontSize: '14px' }}>
           {perfect
             ? 'Amazing! You completed the puzzle without any mistakes!'
             : `You solved the puzzle with ${mistakes} mistake${mistakes !== 1 ? 's' : ''}.`}
         </p>
 
-        {/* Stats */}
+        {/* Final Score Banner */}
+        <div
+          style={{
+            background: '#FFD60A',
+            border: '3px solid #0A0A0A',
+            borderRadius: '12px',
+            padding: '14px',
+            boxShadow: '4px 4px 0 #0A0A0A',
+            marginBottom: '20px',
+          }}
+        >
+          <p
+            style={{
+              fontSize: '11px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              color: '#0A0A0A',
+              opacity: 0.85,
+              marginBottom: '2px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+            }}
+          >
+            <Star size={14} fill="#0A0A0A" color="#0A0A0A" /> FINAL SCORE
+          </p>
+
+          {scoreLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '6px 0' }}>
+              <Loader2 size={24} className="animate-spin" color="#0A0A0A" />
+              <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '1.1rem' }}>
+                Calculating Score...
+              </span>
+            </div>
+          ) : scoreError ? (
+            <p style={{ color: '#DC2626', fontWeight: 700, fontSize: '13px', margin: '4px 0 0' }}>
+              ⚠ Score saved locally ({scoreError})
+            </p>
+          ) : (
+            <p
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontWeight: 800,
+                fontSize: '2.4rem',
+                color: '#0A0A0A',
+                margin: 0,
+                lineHeight: 1.1,
+              }}
+            >
+              {score !== null && score !== undefined ? score.toLocaleString() : 'N/A'}
+            </p>
+          )}
+        </div>
+
+        {/* Stats Grid */}
         <div
           style={{
             display: 'flex',
-            gap: '12px',
+            gap: '10px',
             justifyContent: 'center',
-            marginBottom: '28px',
+            marginBottom: '24px',
             flexWrap: 'wrap',
           }}
         >
@@ -93,11 +160,12 @@ export default function CompletionModal({ mistakes = 0, timerSeconds = 0, diffic
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <button
+            id="completion-play-again-btn"
             onClick={onNewGame}
             style={{
-              flex: 1,
+              width: '100%',
               padding: '14px',
               border: '3px solid #0A0A0A',
               borderRadius: '10px',
@@ -110,37 +178,67 @@ export default function CompletionModal({ mistakes = 0, timerSeconds = 0, diffic
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6px',
+              gap: '8px',
+              fontFamily: "'Space Grotesk', sans-serif",
               transition: 'all 0.1s',
             }}
           >
-            <RotateCcw size={16} />
-            New Game
+            <RotateCcw size={18} />
+            Play Again
           </button>
-          <Link
-            to="/leaderboard"
-            style={{
-              flex: 1,
-              padding: '14px',
-              border: '3px solid #0A0A0A',
-              borderRadius: '10px',
-              fontWeight: 800,
-              fontSize: '15px',
-              cursor: 'pointer',
-              background: '#FFD60A',
-              color: '#0A0A0A',
-              boxShadow: '4px 4px 0 #0A0A0A',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              textDecoration: 'none',
-              transition: 'all 0.1s',
-            }}
-          >
-            <BarChart2 size={16} />
-            Leaderboard
-          </Link>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Link
+              to="/my-scores"
+              style={{
+                flex: 1,
+                padding: '12px',
+                border: '3px solid #0A0A0A',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '14px',
+                cursor: 'pointer',
+                background: '#FFD60A',
+                color: '#0A0A0A',
+                boxShadow: '3px 3px 0 #0A0A0A',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                textDecoration: 'none',
+                fontFamily: "'Space Grotesk', sans-serif",
+                transition: 'all 0.1s',
+              }}
+            >
+              <User size={16} />
+              My Scores
+            </Link>
+            <Link
+              to="/leaderboard"
+              style={{
+                flex: 1,
+                padding: '12px',
+                border: '3px solid #0A0A0A',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '14px',
+                cursor: 'pointer',
+                background: 'white',
+                color: '#0A0A0A',
+                boxShadow: '3px 3px 0 #0A0A0A',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                textDecoration: 'none',
+                fontFamily: "'Space Grotesk', sans-serif",
+                transition: 'all 0.1s',
+              }}
+            >
+              <BarChart2 size={16} />
+              Leaderboard
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -153,14 +251,15 @@ function StatBadge({ label, value, bg }) {
       style={{
         border: '3px solid #0A0A0A',
         borderRadius: '10px',
-        padding: '12px 18px',
-        boxShadow: '4px 4px 0 #0A0A0A',
+        padding: '10px 14px',
+        boxShadow: '3px 3px 0 #0A0A0A',
         background: bg,
-        minWidth: '90px',
+        flex: 1,
+        minWidth: '85px',
       }}
     >
-      <p style={{ fontSize: '10px', fontWeight: 700, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{label}</p>
-      <p style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '1.2rem' }}>{value}</p>
+      <p style={{ fontSize: '10px', fontWeight: 700, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{label}</p>
+      <p style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '1.1rem', margin: 0 }}>{value}</p>
     </div>
   );
 }

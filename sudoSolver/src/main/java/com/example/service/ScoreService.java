@@ -27,19 +27,40 @@ public class ScoreService {
     }
 
 
-    public ScoreResponse saveScore(ScoreRequest request) {
+    private User getAuthenticatedUser() {
+        Object principal = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
 
-        // Get logged-in user
+        // BUG FIX / CORRECTION:
+        // If principal is already the User entity instance, return it directly to avoid an extra DB query.
+        if (principal instanceof User user) {
+            return user;
+        }
+
+        // BUG FIX / CORRECTION:
+        // Previously, JwtAuthenticationFilter placed the 'User' object as the principal.
+        // Calling authentication.getName() evaluated user.toString(), returning "com.example.entity.User@<hashcode>".
+        // Passing that string to findByEmail(...) resulted in Optional.empty() and threw "User not found".
+        // Now authentication.getName() correctly yields the email address string.
         String email = SecurityContextHolder
                 .getContext()
                 .getAuthentication()
                 .getName();
 
-        User user = userRepository
+        return userRepository
                 .findByEmail(email)
                 .orElseThrow(() ->
                         new RuntimeException("User not found")
                 );
+    }
+
+
+    public ScoreResponse saveScore(ScoreRequest request) {
+
+        // Get logged-in user
+        User user = getAuthenticatedUser();
 
 
         // Calculate score
@@ -98,7 +119,7 @@ public class ScoreService {
         // Mistake penalty
         int mistakePenalty =
                 mistakes * 200;
-
+LEt
 
         // Time penalty
         int timePenalty =
@@ -118,16 +139,8 @@ public class ScoreService {
 
     public List<ScoreResponse> getMyScores() {
 
-        String email = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
-
-        User user = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found")
-                );
+        // Get logged-in user
+        User user = getAuthenticatedUser();
 
 
         return scoreRepository

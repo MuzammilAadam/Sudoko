@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Grid3x3, Trophy, Award, BookOpen, LogOut, User } from 'lucide-react';
+import { Menu, X, Grid3x3, Trophy, Award, BookOpen, LogOut, User, BarChart2 } from 'lucide-react';
 import { clearAuth, getUsername, isAuthenticated } from '../services/authApi';
 
 const NAV_LINKS = [
   { label: 'Classic', to: '/', icon: <Grid3x3 size={16} /> },
+  { label: 'My Scores', to: '/my-scores', icon: <User size={16} /> },
   { label: 'Leaderboard', to: '/leaderboard', icon: <Trophy size={16} /> },
   { label: 'Awards', to: '/awards', icon: <Award size={16} /> },
   { label: 'Rules', to: '/rules', icon: <BookOpen size={16} /> },
@@ -133,7 +134,8 @@ export default function Header() {
           {authenticated && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px' }}>
               {/* Username badge */}
-              <div
+              <Link
+                to="/my-scores"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -141,15 +143,24 @@ export default function Header() {
                   padding: '6px 12px',
                   border: '2px solid #0A0A0A',
                   borderRadius: '8px',
-                  background: '#F5EED8',
+                  background: pathname === '/my-scores' ? '#FFD60A' : '#F5EED8',
                   fontWeight: 700,
                   fontSize: '13px',
                   boxShadow: '2px 2px 0 #0A0A0A',
+                  textDecoration: 'none',
+                  color: '#0A0A0A',
+                  transition: 'all 0.1s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (pathname !== '/my-scores') e.currentTarget.style.background = '#FFD60A';
+                }}
+                onMouseLeave={(e) => {
+                  if (pathname !== '/my-scores') e.currentTarget.style.background = '#F5EED8';
                 }}
               >
                 <User size={14} />
                 {username}
-              </div>
+              </Link>
               {/* Logout button */}
               <button
                 id="header-logout-btn"
@@ -238,7 +249,9 @@ export default function Header() {
           {authenticated && (
             <>
               {/* Username pill */}
-              <div
+              <Link
+                to="/my-scores"
+                onClick={() => setMenuOpen(false)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -252,11 +265,13 @@ export default function Header() {
                   fontSize: '14px',
                   background: '#F5EED8',
                   boxShadow: '3px 3px 0 #0A0A0A',
+                  textDecoration: 'none',
+                  color: '#0A0A0A',
                 }}
               >
                 <User size={16} />
                 {username}
-              </div>
+              </Link>
               {/* Logout */}
               <button
                 id="mobile-logout-btn"

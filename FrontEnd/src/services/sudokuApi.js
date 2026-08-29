@@ -1,22 +1,35 @@
-// ============================================================
-// API Service — All backend communication lives here.
-// Components should NEVER make fetch/axios calls directly.
-// ============================================================
+import { clearAuth } from './authApi';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 /**
  * Generic request helper.
  * Automatically attaches the JWT Bearer token from localStorage if present.
+ * Redirects to /login if backend returns 401 or 403 unauthorized status.
  */
 async function request(path, options = {}) {
   const url = `${BASE_URL}${path}`;
   const token = localStorage.getItem('sudoku_jwt');
   const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
-  const response = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...authHeader, ...(options.headers || {}) },
-    ...options,
-  });
+
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...authHeader, ...(options.headers || {}) },
+      ...options,
+    });
+  } catch (err) {
+    throw new Error(err.message || 'Network error connecting to backend.');
+  }
+
+  // Handle unauthorized responses (401 or 403)
+  if (response.status === 401 || response.status === 403) {
+    clearAuth();
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    throw new Error('Session expired or unauthorized. Please log in again.');
+  }
 
   if (!response.ok) {
     let errorBody = null;
@@ -64,9 +77,39 @@ export async function makeMove(gameId, row, col, value) {
 }
 
 /**
+ * POST /api/scores
+ * Submit completed game score to backend.
+ *
+ * @param {Object} scoreData
+ * @param {string} scoreData.difficulty
+ * @param {number} scoreData.mistakes
+ * @param {number} scoreData.timeTaken
+ * @returns {Promise<{id: number, username: string, score: number, difficulty: string, mistakes: number, timeTaken: number}>}
+ */
+export async function submitScore({ difficulty, mistakes, timeTaken }) {
+  return request('/api/scores', {
+    method: 'POST',
+    body: JSON.stringify({
+      difficulty: (difficulty || 'MEDIUM').toUpperCase(),
+      mistakes: Number(mistakes || 0),
+      timeTaken: Number(timeTaken || 0),
+    }),
+  });
+}
+
+/**
+ * GET /api/scores/me
+ * Fetch logged-in user's score history.
+ *
+ * @returns {Promise<Array<{id: number, username: string, score: number, difficulty: string, mistakes: number, timeTaken: number}>>}
+ */
+export async function fetchMyScores() {
+  return request('/api/scores/me');
+}
+
+/**
  * GET /api/leaderboard
  * Fetch leaderboard entries.
- * Modular — backend integration can be completed later.
  *
  * @returns {Promise<Array>}
  */
@@ -77,7 +120,6 @@ export async function fetchLeaderboard() {
 /**
  * GET /api/awards
  * Fetch player achievements.
- * Modular — backend integration can be completed later.
  *
  * @returns {Promise<Array>}
  */
