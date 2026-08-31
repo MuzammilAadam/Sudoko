@@ -1,5 +1,7 @@
 package com.example.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class Game {
 
     private String gameId;
@@ -8,6 +10,7 @@ public class Game {
 
     private int[][] puzzle;
 
+    @JsonIgnore
     private int[][] solution;
 
     private int[][] currentBoard;

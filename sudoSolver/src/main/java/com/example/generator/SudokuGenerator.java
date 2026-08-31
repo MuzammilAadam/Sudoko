@@ -12,33 +12,46 @@ public class SudokuGenerator {
 
     private final SudokuSolver solver = new SudokuSolver();
 
-    public int[][] generate(String difficulty) {
+    public static class GeneratedPuzzle {
+        private final int[][] puzzle;
+        private final int[][] solution;
 
-        // Create empty board
+        public GeneratedPuzzle(int[][] puzzle, int[][] solution) {
+            this.puzzle = puzzle;
+            this.solution = solution;
+        }
+
+        public int[][] getPuzzle() {
+            return puzzle;
+        }
+
+        public int[][] getSolution() {
+            return solution;
+        }
+    }
+
+    // BUG: Previously, generate() created a full solution board S1, removed numbers to form puzzle, but discarded S1.
+    // Re-solving the puzzle later in GameService using generateSolution() could yield a different valid solution S2 if multiple solutions existed.
+    // When a user placed a number matching S1, it was compared against S2, causing valid moves to be marked incorrect and reducing chances.
+    // FIX: Generate the solution board and puzzle together, preserving the exact original solution S1 so that game.getSolution() matches the generated puzzle.
+    public GeneratedPuzzle generatePuzzleAndSolution(String difficulty) {
         int[][] solution = new int[9][9];
-
-        // Generate complete Sudoku
         solver.solve(solution);
 
-        // Create puzzle from solution
         int[][] puzzle = copyBoard(solution);
-
         int clues = getCluesForDifficulty(difficulty);
-
         removeNumbers(puzzle, clues);
 
-        return puzzle;
+        return new GeneratedPuzzle(puzzle, solution);
+    }
+
+    public int[][] generate(String difficulty) {
+        return generatePuzzleAndSolution(difficulty).getPuzzle();
     }
 
     public int[][] generateSolution(int[][] puzzle) {
-
         int[][] solution = copyBoard(puzzle);
-
-        // LOGIC FIX: Use solveDeterministic instead of randomized solver.solve.
-        // Solving an existing puzzle with randomized backtracking is inefficient (allocates
-        // arraylists on every cell step) and can produce inconsistent results if multiple solutions exist.
         solver.solveDeterministic(solution);
-
         return solution;
     }
 
@@ -84,17 +97,17 @@ public class SudokuGenerator {
 
             case "EASY" -> 50;
 
-            case "MEDIUM" -> 32;
+            case "MEDIUM" -> 40;
 
-            case "HARD" -> 28;
+            case "HARD" -> 32;
 
-            case "EXPERT" -> 24;
+            case "EXPERT" -> 28;
 
-            case "MASTER" -> 20;
+            case "MASTER" -> 24 ;
 
-            case "EXTREME" -> 17;
+            case "EXTREME" -> 22;
 
-            default -> 36;
+            default -> 40;
         };
     }
 

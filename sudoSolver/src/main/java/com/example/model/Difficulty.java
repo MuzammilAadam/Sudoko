@@ -1,8 +1,11 @@
 package com.example.model;
 
 public enum Difficulty {
-
     EASY,
-    MEDIUM
-    ,HARD
+    MEDIUM,
+    HARD,
+    EXPERT,
+    MASTER,
+    EXTREME
 }
+

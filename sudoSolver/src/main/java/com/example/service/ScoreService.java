@@ -111,6 +111,18 @@ public class ScoreService {
                 baseScore = 3000;
                 break;
 
+            case EXPERT:
+                baseScore = 4000;
+                break;
+
+            case MASTER:
+                baseScore = 5000;
+                break;
+
+            case EXTREME:
+                baseScore = 6000;
+                break;
+
             default:
                 baseScore = 1000;
         }

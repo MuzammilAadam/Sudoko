@@ -26,7 +26,10 @@ public class AuthService {
 
     public User signup(SignupRequest request){
         if(userRepository.existsByEmail(request.getEmail())){
-            throw new RuntimeException("Username already exists");
+            throw new RuntimeException("Email is already registered");
+        }
+        if(userRepository.existsByUsername(request.getUsername())){
+            throw new RuntimeException("Username is already taken");
         }
         User user = new User();
         user.setUsername(request.getUsername());

@@ -5,6 +5,7 @@ import com.example.dto.MoveResponse;
 import com.example.generator.SudokuGenerator;
 import com.example.model.Game;
 import com.example.model.GameStatus;
+import com.example.model.SudokuValidator;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -15,11 +16,13 @@ import java.util.UUID;
 public class GameService {
 
     private final SudokuGenerator sudokuGenerator;
+    private final SudokuValidator sudokuValidator;
 
     private final Map<String, Game> games = new HashMap<>();
 
-    public GameService(SudokuGenerator sudokuGenerator) {
+    public GameService(SudokuGenerator sudokuGenerator, SudokuValidator sudokuValidator) {
         this.sudokuGenerator = sudokuGenerator;
+        this.sudokuValidator = sudokuValidator;
     }
 
     public Game createGame(String difficulty) {
@@ -28,11 +31,13 @@ public class GameService {
             difficulty = "EASY";
         }
 
-        int[][] puzzle =
-                sudokuGenerator.generate(difficulty);
+        // BUG: Previously, generate(difficulty) created puzzle and discarded solution S1, then generateSolution(puzzle) re-solved puzzle to S2. If multiple valid solutions existed, valid player moves matching S1 were rejected against S2.
+        // FIX: Use generatePuzzleAndSolution() so the puzzle and its exact original solution S1 are created atomically together.
+        SudokuGenerator.GeneratedPuzzle generated =
+                sudokuGenerator.generatePuzzleAndSolution(difficulty);
 
-        int[][] solution =
-                sudokuGenerator.generateSolution(puzzle);
+        int[][] puzzle = generated.getPuzzle();
+        int[][] solution = generated.getSolution();
 
         String gameId =
                 UUID.randomUUID().toString();
@@ -123,9 +128,11 @@ public class GameService {
             );
         }
 
-        // Check whether move is correct
-        boolean valid =
-                game.getSolution()[row][col] == value;
+        // BUG: Previously, makeMove validated moves purely by checking solution[row][col] == value without checking SudokuValidator.isValidMove on the current board state.
+        // FIX: First validate the move against current board rules (row, column, 3x3 grid using SudokuValidator which ignores self-cell comparison), and confirm value matches the puzzle solution.
+        boolean isRuleValid = sudokuValidator.isValidMove(game.getCurrentBoard(), row, col, value);
+        boolean isSolutionValid = game.getSolution()[row][col] == value;
+        boolean valid = isRuleValid && isSolutionValid;
 
         if (!valid) {
 
@@ -159,7 +166,7 @@ public class GameService {
             );
         }
 
-        // Correct move
+        // Correct move: update current board with valid value ONLY after validation succeeds
         game.getCurrentBoard()[row][col] = value;
 
         // Check completion

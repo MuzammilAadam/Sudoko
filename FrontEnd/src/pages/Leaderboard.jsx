@@ -8,6 +8,13 @@ const PODIUM_COLORS = ['#FFD60A', '#C0C0C0', '#CD7F32'];
 const PODIUM_ICONS = [<Crown size={28} key="crown" />, <Medal size={24} key="m1" />, <Medal size={22} key="m2" />];
 const DIFF_COLORS = { EASY: '#22C55E', MEDIUM: '#3B82F6', HARD: '#F97316', EXPERT: '#EF4444', MASTER: '#7C3AED', EXTREME: '#0A0A0A' };
 
+const formatTime = (seconds) => {
+  if (seconds === undefined || seconds === null) return null;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+
 export default function Leaderboard() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -222,9 +229,9 @@ export default function Leaderboard() {
                       <p style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '18px', color: '#FF3CAC' }}>
                         {score.toLocaleString()}
                       </p>
-                      {entry?.time && (
+                      {(entry?.timeTaken != null || entry?.time) && (
                         <p style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>
-                          {entry.time} · {entry.mistakes ?? 0} err
+                          {formatTime(entry.timeTaken) || entry.time} · {entry.mistakes ?? 0} err
                         </p>
                       )}
                       <div
@@ -321,7 +328,7 @@ export default function Leaderboard() {
                       )}
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                      {entry.time ? <><Clock size={12} /> {entry.time}</> : <span style={{ color: '#9CA3AF' }}>—</span>}
+                      {(entry.timeTaken != null || entry.time) ? <><Clock size={12} /> {formatTime(entry.timeTaken) || entry.time}</> : <span style={{ color: '#9CA3AF' }}>—</span>}
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: (entry.mistakes || 0) > 0 ? '#EF4444' : '#22C55E' }}>
                       {entry.mistakes !== undefined ? <><AlertTriangle size={12} /> {entry.mistakes}</> : <span style={{ color: '#9CA3AF' }}>—</span>}

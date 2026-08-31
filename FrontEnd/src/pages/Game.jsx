@@ -154,6 +154,8 @@ export default function GamePage() {
 
     setLoading(true);
     try {
+      // BUG: Updating the board state locally before calling the backend validation API causes the backend to see the number already present at (row, col), leading to false duplicate errors during row/col/3x3 grid checks.
+      // FIX: Send current board, row, col, and value to backend API FIRST. Update the frontend board ONLY after backend returns response.valid === true. If invalid, keep the board unchanged and decrease remaining chances.
       const response = await makeMove(gameId, row, col, num);
 
       if (response.valid) {
@@ -174,7 +176,7 @@ export default function GamePage() {
           notes: { ...prev.notes, [key]: new Set() }, // clear notes on placed value
         }));
       } else {
-        // Wrong move: shake, add error highlight, update mistakes/chances
+        // Wrong move: shake, add error highlight, update mistakes/chances without modifying currentBoard
         setState((prev) => ({
           ...prev,
           mistakes: response.mistakes,
