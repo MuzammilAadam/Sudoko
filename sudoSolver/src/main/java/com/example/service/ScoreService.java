@@ -119,7 +119,7 @@ public class ScoreService {
         // Mistake penalty
         int mistakePenalty =
                 mistakes * 200;
-LEt
+
 
         // Time penalty
         int timePenalty =

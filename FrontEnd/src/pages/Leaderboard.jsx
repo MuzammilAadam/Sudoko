@@ -1,43 +1,60 @@
 import { useState, useEffect } from 'react';
-import { Trophy, Medal, Crown, Clock, AlertTriangle, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Trophy, Medal, Crown, Clock, AlertTriangle, Star, Loader2 } from 'lucide-react';
 import { fetchLeaderboard } from '../services/sudokuApi';
-
-// ── Placeholder data for UI demonstration ────────────────────
-const PLACEHOLDER_ENTRIES = [
-  { rank: 1, player: 'xoxo_pixel', difficulty: 'EXTREME', time: '04:12', mistakes: 0, score: 9850 },
-  { rank: 2, player: 'sudoku_witch', difficulty: 'MASTER', time: '05:33', mistakes: 0, score: 8700 },
-  { rank: 3, player: 'neo_solver', difficulty: 'EXPERT', time: '06:50', mistakes: 1, score: 7600 },
-  { rank: 4, player: 'gridmaster99', difficulty: 'HARD', time: '08:14', mistakes: 0, score: 6400 },
-  { rank: 5, player: 'puzzlequeen', difficulty: 'EXTREME', time: '09:02', mistakes: 2, score: 6100 },
-  { rank: 6, player: 'byte_ninja', difficulty: 'MASTER', time: '10:05', mistakes: 1, score: 5800 },
-  { rank: 7, player: 'the_logician', difficulty: 'HARD', time: '11:20', mistakes: 0, score: 5400 },
-  { rank: 8, player: 'inkdrop_7', difficulty: 'MEDIUM', time: '07:45', mistakes: 0, score: 4900 },
-  { rank: 9, player: 'ciphercat', difficulty: 'EXPERT', time: '12:30', mistakes: 2, score: 4500 },
-  { rank: 10, player: 'retro_geek', difficulty: 'HARD', time: '13:00', mistakes: 1, score: 4200 },
-];
+import { clearAuth } from '../services/authApi';
 
 const PODIUM_COLORS = ['#FFD60A', '#C0C0C0', '#CD7F32'];
-const PODIUM_ICONS = [<Crown size={28} />, <Medal size={24} />, <Medal size={22} />];
+const PODIUM_ICONS = [<Crown size={28} key="crown" />, <Medal size={24} key="m1" />, <Medal size={22} key="m2" />];
 const DIFF_COLORS = { EASY: '#22C55E', MEDIUM: '#3B82F6', HARD: '#F97316', EXPERT: '#EF4444', MASTER: '#7C3AED', EXTREME: '#0A0A0A' };
 
 export default function Leaderboard() {
-  const [entries, setEntries] = useState(PLACEHOLDER_ENTRIES);
-  const [loading, setLoading] = useState(false);
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState('ALL');
+  const navigate = useNavigate();
+
+  const loadLeaderboard = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchLeaderboard();
+      if (Array.isArray(data)) {
+        setEntries(data);
+      } else {
+        setEntries([]);
+      }
+    } catch (err) {
+      if (
+        err.status === 401 ||
+        err.status === 403 ||
+        err.message?.includes('Session expired') ||
+        err.message?.includes('unauthorized') ||
+        err.message?.includes('401') ||
+        err.message?.includes('403')
+      ) {
+        clearAuth();
+        localStorage.removeItem('sudoku_jwt');
+        navigate('/login');
+      } else {
+        setError(err.message || 'Failed to load leaderboard data.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Attempt to fetch real data; fall back to placeholder
-    setLoading(true);
-    fetchLeaderboard()
-      .then((data) => { if (Array.isArray(data) && data.length > 0) setEntries(data); })
-      .catch(() => { /* backend not ready; placeholder stays */ })
-      .finally(() => setLoading(false));
+    loadLeaderboard();
   }, []);
 
   const difficulties = ['ALL', 'EASY', 'MEDIUM', 'HARD', 'EXPERT', 'MASTER', 'EXTREME'];
-  const filtered = filter === 'ALL' ? entries : entries.filter((e) => e.difficulty === filter);
+  const filtered = filter === 'ALL'
+    ? entries
+    : entries.filter((e) => e.difficulty && e.difficulty.toUpperCase() === filter);
+
   const top3 = filtered.slice(0, 3);
-  const rest = filtered.slice(3);
 
   return (
     <main style={{ minHeight: '100vh', padding: '32px 16px 60px' }}>
@@ -93,167 +110,240 @@ export default function Leaderboard() {
           ))}
         </div>
 
-        {/* ── Top 3 Podium ── */}
-        {top3.length >= 3 && (
+        {/* ── Error Alert ── */}
+        {error && (
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr',
+              background: '#FEE2E2',
+              border: '3px solid #EF4444',
+              borderRadius: '10px',
+              padding: '16px 20px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               gap: '12px',
-              marginBottom: '28px',
+              boxShadow: '4px 4px 0 #EF4444',
             }}
           >
-            {/* Rearrange: 2nd left, 1st center, 3rd right */}
-            {[top3[1], top3[0], top3[2]].map((entry, idx) => {
-              const realRank = [2, 1, 3][idx];
-              const height = ['160px', '200px', '140px'][idx];
-              const bg = PODIUM_COLORS[realRank - 1];
-              return (
-                <div
-                  key={realRank}
-                  className="neo-card"
-                  style={{
-                    padding: '20px 12px',
-                    textAlign: 'center',
-                    background: 'white',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    minHeight: height,
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '52px',
-                      height: '52px',
-                      border: '3px solid #0A0A0A',
-                      borderRadius: '50%',
-                      background: bg,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '8px',
-                      boxShadow: '3px 3px 0 #0A0A0A',
-                      color: realRank === 2 ? '#0A0A0A' : 'white',
-                    }}
-                  >
-                    {PODIUM_ICONS[realRank - 1]}
-                  </div>
-                  <p style={{ fontWeight: 800, fontSize: '14px', marginBottom: '2px' }}>{entry?.player}</p>
-                  <p style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '18px', color: '#FF3CAC' }}>
-                    {entry?.score?.toLocaleString()}
-                  </p>
-                  <p style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>{entry?.time} · {entry?.mistakes} err</p>
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      background: bg,
-                      border: '2px solid #0A0A0A',
-                      borderRadius: '50%',
-                      width: '28px',
-                      height: '28px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '12px',
-                    }}
-                  >
-                    #{realRank}
-                  </div>
-                </div>
-              );
-            })}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <AlertTriangle size={20} color="#EF4444" />
+              <span style={{ fontWeight: 700, color: '#991B1B' }}>{error}</span>
+            </div>
+            <button
+              onClick={loadLeaderboard}
+              style={{
+                padding: '6px 14px',
+                border: '2px solid #0A0A0A',
+                borderRadius: '6px',
+                background: 'white',
+                fontWeight: 700,
+                fontSize: '12px',
+                cursor: 'pointer',
+              }}
+            >
+              Try Again
+            </button>
           </div>
         )}
 
-        {/* ── Full Table ── */}
-        <div className="neo-card" style={{ overflow: 'hidden' }}>
-          {/* Table header */}
+        {/* ── Loading State ── */}
+        {loading ? (
           <div
+            className="neo-card"
             style={{
-              display: 'grid',
-              gridTemplateColumns: '50px 1fr 100px 90px 80px 90px',
-              padding: '14px 20px',
-              borderBottom: '3px solid #0A0A0A',
-              background: '#0A0A0A',
-              color: 'white',
-              fontWeight: 800,
-              fontSize: '11px',
-              letterSpacing: '1px',
-              textTransform: 'uppercase',
+              padding: '60px 20px',
+              textAlign: 'center',
+              background: 'white',
+              marginBottom: '28px',
             }}
           >
-            <span>#</span>
-            <span>Player</span>
-            <span>Difficulty</span>
-            <span>Time</span>
-            <span>Mistakes</span>
-            <span>Score</span>
+            <Loader2 size={40} className="animate-spin" color="#FF3CAC" style={{ margin: '0 auto 16px' }} />
+            <p style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '1.1rem' }}>
+              Loading leaderboard data...
+            </p>
           </div>
+        ) : (
+          <>
+            {/* ── Top 3 Podium ── */}
+            {top3.length >= 3 && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr 1fr',
+                  gap: '12px',
+                  marginBottom: '28px',
+                }}
+              >
+                {/* Rearrange: 2nd left, 1st center, 3rd right */}
+                {[top3[1], top3[0], top3[2]].map((entry, idx) => {
+                  const defaultRank = [2, 1, 3][idx];
+                  const rankVal = entry?.rank ?? defaultRank;
+                  const height = ['160px', '200px', '140px'][idx];
+                  const bg = PODIUM_COLORS[(rankVal - 1) % 3] || PODIUM_COLORS[0];
+                  const username = entry?.username || entry?.player || 'Player';
+                  const score = entry?.score ?? 0;
 
-          {filtered.map((entry, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '50px 1fr 100px 90px 80px 90px',
-                padding: '14px 20px',
-                borderBottom: i < filtered.length - 1 ? '1px solid #E5E7EB' : 'none',
-                background: i % 2 === 0 ? 'white' : '#FFFBF0',
-                alignItems: 'center',
-                transition: 'background 0.1s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5E6'}
-              onMouseLeave={(e) => e.currentTarget.style.background = i % 2 === 0 ? 'white' : '#FFFBF0'}
-            >
-              <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: entry.rank <= 3 ? PODIUM_COLORS[entry.rank - 1] : '#9CA3AF' }}>
-                #{entry.rank}
-              </span>
-              <span style={{ fontWeight: 700 }}>{entry.player}</span>
-              <span>
-                <span
-                  style={{
-                    background: DIFF_COLORS[entry.difficulty] || '#6B7280',
-                    color: 'white',
-                    border: '1px solid #0A0A0A',
-                    borderRadius: '4px',
-                    padding: '2px 8px',
-                    fontSize: '10px',
-                    fontWeight: 700,
-                  }}
-                >
-                  {entry.difficulty}
-                </span>
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                <Clock size={12} /> {entry.time}
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: entry.mistakes > 0 ? '#EF4444' : '#22C55E' }}>
-                <AlertTriangle size={12} /> {entry.mistakes}
-              </span>
-              <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: '#FF3CAC' }}>
-                {entry.score?.toLocaleString()}
-              </span>
+                  return (
+                    <div
+                      key={rankVal + '-' + username}
+                      className="neo-card"
+                      style={{
+                        padding: '20px 12px',
+                        textAlign: 'center',
+                        background: 'white',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        minHeight: height,
+                        position: 'relative',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '52px',
+                          height: '52px',
+                          border: '3px solid #0A0A0A',
+                          borderRadius: '50%',
+                          background: bg,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: '8px',
+                          boxShadow: '3px 3px 0 #0A0A0A',
+                          color: rankVal === 2 ? '#0A0A0A' : 'white',
+                        }}
+                      >
+                        {PODIUM_ICONS[(rankVal - 1) % 3] || PODIUM_ICONS[0]}
+                      </div>
+                      <p style={{ fontWeight: 800, fontSize: '14px', marginBottom: '2px' }}>{username}</p>
+                      <p style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '18px', color: '#FF3CAC' }}>
+                        {score.toLocaleString()}
+                      </p>
+                      {entry?.time && (
+                        <p style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>
+                          {entry.time} · {entry.mistakes ?? 0} err
+                        </p>
+                      )}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          right: '8px',
+                          background: bg,
+                          border: '2px solid #0A0A0A',
+                          borderRadius: '50%',
+                          width: '28px',
+                          height: '28px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 800,
+                          fontSize: '12px',
+                        }}
+                      >
+                        #{rankVal}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── Full Table ── */}
+            <div className="neo-card" style={{ overflow: 'hidden' }}>
+              {/* Table header */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '50px 1fr 100px 90px 80px 90px',
+                  padding: '14px 20px',
+                  borderBottom: '3px solid #0A0A0A',
+                  background: '#0A0A0A',
+                  color: 'white',
+                  fontWeight: 800,
+                  fontSize: '11px',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <span>#</span>
+                <span>Player</span>
+                <span>Difficulty</span>
+                <span>Time</span>
+                <span>Mistakes</span>
+                <span>Score</span>
+              </div>
+
+              {filtered.map((entry, i) => {
+                const rankVal = entry.rank ?? (i + 1);
+                const username = entry.username || entry.player || 'Player';
+                const score = entry.score ?? 0;
+
+                return (
+                  <div
+                    key={entry.id || username + '-' + rankVal}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '50px 1fr 100px 90px 80px 90px',
+                      padding: '14px 20px',
+                      borderBottom: i < filtered.length - 1 ? '1px solid #E5E7EB' : 'none',
+                      background: i % 2 === 0 ? 'white' : '#FFFBF0',
+                      alignItems: 'center',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#FFF5E6')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? 'white' : '#FFFBF0')}
+                  >
+                    <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: rankVal <= 3 ? (PODIUM_COLORS[rankVal - 1] || '#FFD60A') : '#9CA3AF' }}>
+                      #{rankVal}
+                    </span>
+                    <span style={{ fontWeight: 700 }}>{username}</span>
+                    <span>
+                      {entry.difficulty ? (
+                        <span
+                          style={{
+                            background: DIFF_COLORS[entry.difficulty] || '#6B7280',
+                            color: 'white',
+                            border: '1px solid #0A0A0A',
+                            borderRadius: '4px',
+                            padding: '2px 8px',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {entry.difficulty}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#9CA3AF', fontSize: '12px' }}>—</span>
+                      )}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                      {entry.time ? <><Clock size={12} /> {entry.time}</> : <span style={{ color: '#9CA3AF' }}>—</span>}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: (entry.mistakes || 0) > 0 ? '#EF4444' : '#22C55E' }}>
+                      {entry.mistakes !== undefined ? <><AlertTriangle size={12} /> {entry.mistakes}</> : <span style={{ color: '#9CA3AF' }}>—</span>}
+                    </span>
+                    <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: '#FF3CAC' }}>
+                      {score.toLocaleString()}
+                    </span>
+                  </div>
+                );
+              })}
+
+              {filtered.length === 0 && (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
+                  No leaderboard entries found.
+                </div>
+              )}
             </div>
-          ))}
+          </>
+        )}
 
-          {filtered.length === 0 && (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
-              No entries for this difficulty yet.
-            </div>
-          )}
-        </div>
-
-        <p style={{ textAlign: 'center', fontSize: '12px', color: '#9CA3AF', marginTop: '16px' }}>
-          * Leaderboard data shown is demo data. Live backend integration coming soon.
-        </p>
       </div>
     </main>
   );
 }
+

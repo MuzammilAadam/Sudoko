@@ -34,7 +34,10 @@ public class SudokuGenerator {
 
         int[][] solution = copyBoard(puzzle);
 
-        solver.solve(solution);
+        // LOGIC FIX: Use solveDeterministic instead of randomized solver.solve.
+        // Solving an existing puzzle with randomized backtracking is inefficient (allocates
+        // arraylists on every cell step) and can produce inconsistent results if multiple solutions exist.
+        solver.solveDeterministic(solution);
 
         return solution;
     }
@@ -51,7 +54,12 @@ public class SudokuGenerator {
 
         Collections.shuffle(positions);
 
-        int cellsToRemove = 81 - clues;
+        // LOGIC FIX: Clamp clues to a safe range [17, 81].
+        // 1) Sudoku mathematically requires at least 17 clues to be solvable.
+        // 2) Clamping prevents negative values in cellsToRemove = (81 - safeClues),
+        // preventing IndexOutOfBoundsException when accessing positions.
+        int safeClues = Math.max(17, Math.min(81, clues));
+        int cellsToRemove = 81 - safeClues;
 
         for (int i = 0; i < cellsToRemove; i++) {
 
@@ -70,6 +78,8 @@ public class SudokuGenerator {
             return 36;
         }
 
+        // LOGIC FIX: Updated "EXTREME" clues from 16 to 17.
+        // A standard 9x9 Sudoku puzzle cannot have fewer than 17 clues while maintaining a valid solution.
         return switch (difficulty.toUpperCase()) {
 
             case "EASY" -> 50;
@@ -82,7 +92,7 @@ public class SudokuGenerator {
 
             case "MASTER" -> 20;
 
-            case "EXTREME" -> 16;
+            case "EXTREME" -> 17;
 
             default -> 36;
         };

@@ -45,6 +45,40 @@ public class SudokuSolver {
         return false;
     }
 
+    /**
+     * Solves an existing Sudoku puzzle deterministically (1..9 order).
+     * Avoids random shuffling overhead and guarantees consistent solution retrieval.
+     */
+    public boolean solveDeterministic(int[][] board) {
+
+        int[] emptyCell = findEmptyCell(board);
+
+        // No empty cell means Sudoku is solved
+        if (emptyCell == null) {
+            return true;
+        }
+
+        int row = emptyCell[0];
+        int col = emptyCell[1];
+
+        for (int value = 1; value <= 9; value++) {
+
+            if (isValid(board, row, col, value)) {
+
+                board[row][col] = value;
+
+                if (solveDeterministic(board)) {
+                    return true;
+                }
+
+                // Backtrack
+                board[row][col] = 0;
+            }
+        }
+
+        return false;
+    }
+
     private int[] findEmptyCell(int[][] board) {
 
         for (int row = 0; row < 9; row++) {
