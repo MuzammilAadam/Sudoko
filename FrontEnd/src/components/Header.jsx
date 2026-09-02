@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Grid3x3, Trophy, Award, BookOpen, LogOut, User, BarChart2 } from 'lucide-react';
+import { Menu, X, Grid3x3, Trophy, Award, BookOpen, LogOut, User, BarChart2, Users } from 'lucide-react';
 import { clearAuth, getUsername, isAuthenticated } from '../services/authApi';
 
 const NAV_LINKS = [
   { label: 'Classic', to: '/', icon: <Grid3x3 size={16} /> },
+  { label: 'Multiplayer', to: '/multiplayer', icon: <Users size={16} /> },
   { label: 'My Scores', to: '/my-scores', icon: <User size={16} /> },
   { label: 'Leaderboard', to: '/leaderboard', icon: <Trophy size={16} /> },
   { label: 'Awards', to: '/awards', icon: <Award size={16} /> },

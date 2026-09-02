@@ -59,6 +59,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // Public APIs
+                        // IMPORTANT:
+                        // Allow SockJS handshake and internal endpoints
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/auth/**")
                         .permitAll()
 
