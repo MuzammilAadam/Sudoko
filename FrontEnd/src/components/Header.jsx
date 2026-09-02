@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Grid3x3, Trophy, Award, BookOpen, LogOut, User, BarChart2, Users } from 'lucide-react';
+import { Menu, X, Grid3x3, Trophy, Award, BookOpen, LogOut, User, Users } from 'lucide-react';
 import { clearAuth, getUsername, isAuthenticated } from '../services/authApi';
 
 const NAV_LINKS = [

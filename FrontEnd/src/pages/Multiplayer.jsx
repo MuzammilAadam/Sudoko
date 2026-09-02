@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SudokuBoard from '../components/SudokuBoard';
 import NumberPad from '../components/NumberPad';
@@ -14,7 +14,6 @@ import {
   Check,
   Loader2,
   AlertCircle,
-  Trophy,
   Zap,
   ArrowLeft,
   Info,
@@ -43,8 +42,9 @@ export default function MultiplayerPage() {
   const [apiLoading, setApiLoading] = useState(false);
   const [roomError, setRoomError] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [cellAnims, setCellAnims] = useState({});
-  const [cellErrors, setCellErrors] = useState(new Set());
+  // cellAnims and cellErrors are derived from backend updates; we keep empty refs for the board prop
+  const EMPTY_SET = new Set();
+  const EMPTY_OBJ = {};
 
   // ─── WebSocket Update Handler ───────────────────────────────
   /**
@@ -176,21 +176,22 @@ export default function MultiplayerPage() {
   };
 
   // ─── Move Submission Handler (WebSocket) ─────────────────────
-  const handleNumberInput = (value) => {
+  // Wrapped in useCallback so the keyboard listener effect can include it as a stable dep.
+  const handleNumberInput = useCallback((value) => {
     if (selectedRow === null || selectedCol === null) return;
     if (gameFinished || !isConnected) return;
     if (initialBoard && initialBoard[selectedRow][selectedCol] !== 0) return; // non-editable
 
-    const key = `${selectedRow}-${selectedCol}`;
-
     // Send move to backend via WebSocket: /app/game.move
-    // DO NOT update local board here! Backend broadcasts the updated board on /topic/game/{roomId}
+    // Include username so backend can correctly track per-player scores.
+    // DO NOT update local board here — backend is the source of truth.
     sendMove({
       row: selectedRow,
       col: selectedCol,
       value,
+      username, // required by backend MultiplayerMove DTO for score attribution
     });
-  };
+  }, [selectedRow, selectedCol, gameFinished, isConnected, initialBoard, sendMove, username]);
 
   // ─── Keyboard Input Listener ────────────────────────────────
   useEffect(() => {
@@ -211,7 +212,8 @@ export default function MultiplayerPage() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [roomId, gameFinished, selectedRow, selectedCol]);
+  // handleNumberInput is stable because it's wrapped in useCallback
+  }, [roomId, gameFinished, handleNumberInput]);
 
   // Compute remaining counts for NumberPad
   const computeRemainingCounts = (board) => {
@@ -711,9 +713,9 @@ export default function MultiplayerPage() {
                       currentBoard={currentBoard}
                       selectedRow={selectedRow}
                       selectedCol={selectedCol}
-                      cellAnims={cellAnims}
-                      cellErrors={cellErrors}
-                      notes={{}}
+                      cellAnims={EMPTY_OBJ}
+                      cellErrors={EMPTY_SET}
+                      notes={EMPTY_OBJ}
                       disabled={boardDisabled}
                       onCellClick={handleCellClick}
                     />

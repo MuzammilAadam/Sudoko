@@ -1,4 +1,4 @@
-import { Trophy, RotateCcw, LogOut, Award, Users, CheckCircle } from 'lucide-react';
+import { Trophy, RotateCcw, LogOut, Award, Users } from 'lucide-react';
 
 /**
  * MultiplayerResultModal — Modal shown when gameFinished === true in online multiplayer mode.

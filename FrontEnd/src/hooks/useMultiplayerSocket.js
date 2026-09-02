@@ -128,8 +128,8 @@ export function useMultiplayerSocket(roomId, username, onGameUpdate, onError) {
       if (subscriptionRef.current) {
         try {
           subscriptionRef.current.unsubscribe();
-        } catch (e) {
-          // ignore cleanup errors
+        } catch (_e) {
+          // Ignore cleanup errors — STOMP may already be closed at this point
         }
         subscriptionRef.current = null;
       }
@@ -155,11 +155,13 @@ export function useMultiplayerSocket(roomId, username, onGameUpdate, onError) {
         return false;
       }
 
-      // Publish move payload: { roomId, row, col, value }
+      // Publish move payload: { roomId, username, row, col, value }
+      // username is required by the backend MultiplayerMove DTO to attribute scores correctly.
       clientRef.current.publish({
         destination: '/app/game.move',
         body: JSON.stringify({
           roomId,
+          username: move.username || '',
           row: move.row,
           col: move.col,
           value: move.value,

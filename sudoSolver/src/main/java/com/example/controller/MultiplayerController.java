@@ -52,13 +52,9 @@ public class MultiplayerController {
     ) {
 
         /*
-         * TODO:
-         * Replace this with username extracted
-         * from authenticated WebSocket JWT session.
+         * Username is sent by the frontend as part of the MultiplayerMove DTO payload.
+         * It is used to attribute correct/wrong moves to the right player and update their score.
          */
-        String username = "Player";
-
-
         GameUpdate update =
                 multiplayerGameService
                         .makeMove(
