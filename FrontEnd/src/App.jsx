@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
+import Home from './pages/Home';
 import Game from './pages/Game';
 import Multiplayer from './pages/Multiplayer';
 import MyScores from './pages/MyScores';
@@ -26,7 +27,8 @@ function AppLayout() {
         <Route path="/signup" element={<Signup />} />
 
         {/* Protected routes */}
-        <Route path="/" element={<ProtectedRoute><Game /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/classic" element={<ProtectedRoute><Game /></ProtectedRoute>} />
         <Route path="/multiplayer" element={<ProtectedRoute><Multiplayer /></ProtectedRoute>} />
         <Route path="/my-scores" element={<ProtectedRoute><MyScores /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
@@ -44,3 +46,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+

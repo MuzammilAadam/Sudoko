@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import SudokuBoard from '../components/SudokuBoard';
 import NumberPad from '../components/NumberPad';
 import MultiplayerResultModal from '../components/MultiplayerResultModal';
@@ -21,6 +21,7 @@ import {
 
 export default function MultiplayerPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const username = getUsername() || 'Player';
 
   // ─── Room & Board State ─────────────────────────────────────
@@ -42,31 +43,54 @@ export default function MultiplayerPage() {
   const [apiLoading, setApiLoading] = useState(false);
   const [roomError, setRoomError] = useState(null);
   const [copied, setCopied] = useState(false);
-  // cellAnims and cellErrors are derived from backend updates; we keep empty refs for the board prop
   const EMPTY_SET = new Set();
   const EMPTY_OBJ = {};
 
+  // ─── Create Room Handler ────────────────────────────────────
+  const handleCreateRoom = useCallback(async () => {
+    setApiLoading(true);
+    setRoomError(null);
+    try {
+      const data = await createMultiplayerRoom();
+      setRoomId(data.roomId);
+      setInitialBoard(data.board);
+      setCurrentBoard(data.board);
+      setPlayerScores({ [username]: 0 });
+      setGameFinished(false);
+      setLastMessage('Room created! Share code with your opponent.');
+      setLastValid(true);
+    } catch (err) {
+      setRoomError(err.message || 'Failed to create room.');
+    } finally {
+      setApiLoading(false);
+    }
+  }, [username]);
+
+  // ─── Handle URL Query Params Auto Action ───────────────────
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const code = searchParams.get('code');
+
+    if (action === 'create' && !roomId && !apiLoading) {
+      handleCreateRoom();
+    } else if (code && !roomId) {
+      const formatted = code.trim().toUpperCase();
+      setJoinInput(formatted);
+      setRoomId(formatted);
+      setInitialBoard(null);
+      setCurrentBoard(null);
+      setGameFinished(false);
+      setLastMessage(`Connecting to room ${formatted}...`);
+    }
+  }, [searchParams, handleCreateRoom, roomId, apiLoading]);
+
   // ─── WebSocket Update Handler ───────────────────────────────
-  /**
-   * Called whenever a message arrives on /topic/game/{roomId} from Spring Boot backend.
-   * Format:
-   * {
-   *   "board": [...],
-   *   "message": "Correct move! +10 points",
-   *   "player": "PlayerName",
-   *   "valid": true/false,
-   *   "gameFinished": false,
-   *   "playerScores": { "PlayerOne": 10, "PlayerTwo": 0 }
-   * }
-   */
   const handleGameUpdate = useCallback(
     (update) => {
       console.log('[Multiplayer Update Received]:', update);
 
       if (update.board) {
-        // Store initial board snapshot if not already set (e.g. when joining existing room)
         setInitialBoard((prev) => prev || update.board.map((row) => [...row]));
-        // Backend is the source of truth for current board
         setCurrentBoard(update.board);
       }
 
@@ -106,26 +130,6 @@ export default function MultiplayerPage() {
     handleSocketError
   );
 
-  // ─── Create Room Handler ────────────────────────────────────
-  const handleCreateRoom = async () => {
-    setApiLoading(true);
-    setRoomError(null);
-    try {
-      const data = await createMultiplayerRoom();
-      setRoomId(data.roomId);
-      setInitialBoard(data.board);
-      setCurrentBoard(data.board);
-      setPlayerScores({ [username]: 0 });
-      setGameFinished(false);
-      setLastMessage('Room created! Share code with your opponent.');
-      setLastValid(true);
-    } catch (err) {
-      setRoomError(err.message || 'Failed to create room.');
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
   // ─── Join Room Handler ──────────────────────────────────────
   const handleJoinRoom = (e) => {
     e?.preventDefault();
@@ -136,7 +140,7 @@ export default function MultiplayerPage() {
     }
     setRoomError(null);
     setRoomId(code);
-    setInitialBoard(null); // will be populated from WebSocket initial update
+    setInitialBoard(null);
     setCurrentBoard(null);
     setGameFinished(false);
     setLastMessage(`Connecting to room ${code}...`);
@@ -169,27 +173,22 @@ export default function MultiplayerPage() {
   // ─── Cell Selection Handler ─────────────────────────────────
   const handleCellClick = (row, col) => {
     if (gameFinished || !isConnected) return;
-    // Given cells in initialBoard cannot be selected or overwritten
     if (initialBoard && initialBoard[row][col] !== 0) return;
     setSelectedRow(row);
     setSelectedCol(col);
   };
 
   // ─── Move Submission Handler (WebSocket) ─────────────────────
-  // Wrapped in useCallback so the keyboard listener effect can include it as a stable dep.
   const handleNumberInput = useCallback((value) => {
     if (selectedRow === null || selectedCol === null) return;
     if (gameFinished || !isConnected) return;
-    if (initialBoard && initialBoard[selectedRow][selectedCol] !== 0) return; // non-editable
+    if (initialBoard && initialBoard[selectedRow][selectedCol] !== 0) return;
 
-    // Send move to backend via WebSocket: /app/game.move
-    // Include username so backend can correctly track per-player scores.
-    // DO NOT update local board here — backend is the source of truth.
     sendMove({
       row: selectedRow,
       col: selectedCol,
       value,
-      username, // required by backend MultiplayerMove DTO for score attribution
+      username,
     });
   }, [selectedRow, selectedCol, gameFinished, isConnected, initialBoard, sendMove, username]);
 
@@ -212,7 +211,6 @@ export default function MultiplayerPage() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  // handleNumberInput is stable because it's wrapped in useCallback
   }, [roomId, gameFinished, handleNumberInput]);
 
   // Compute remaining counts for NumberPad
@@ -288,12 +286,13 @@ export default function MultiplayerPage() {
                   fontWeight: 800,
                   fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
                   marginBottom: '8px',
+                  color: '#0A0A0A',
                 }}
               >
-                Online Multiplayer
+                PLAY WITH FRIENDS
               </h1>
-              <p style={{ color: '#6B7280', fontSize: '15px', marginBottom: '28px', fontWeight: 500 }}>
-                Compete live against friends in real-time Sudoku! Correct moves grant +10 pts, wrong moves cost -5 pts.
+              <p style={{ color: '#4B5563', fontSize: '15px', marginBottom: '28px', fontWeight: 600 }}>
+                Challenge another player in a live Sudoku competition.
               </p>
 
               {/* Two Option Cards: Create or Join */}

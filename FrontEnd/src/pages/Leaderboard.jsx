@@ -73,15 +73,16 @@ export default function Leaderboard() {
           <h1
             style={{
               fontFamily: "'Space Mono', monospace",
-              fontWeight: 700,
+              fontWeight: 900,
               fontSize: 'clamp(2rem, 6vw, 3.5rem)',
               marginBottom: '8px',
+              color: '#0A0A0A',
             }}
           >
-            Leaderboard
+            GLOBAL LEADERBOARD
           </h1>
-          <p style={{ color: '#6B7280', fontSize: '16px' }}>
-            The fastest, the boldest, the best puzzle solvers.
+          <p style={{ color: '#6B7280', fontSize: '16px', fontWeight: 600 }}>
+            The top puzzle solvers competing across all difficulties.
           </p>
         </div>
 

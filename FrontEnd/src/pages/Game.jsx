@@ -313,92 +313,178 @@ export default function GamePage() {
           </div>
         )}
 
-        {/* ── Start banner (IDLE state) ── */}
+        {/* ── Classic Game Setup Screen (IDLE state) ── */}
         {gameStatus === 'IDLE' && (
-          <div
-            className="neo-card"
-            style={{
-              padding: '40px 32px',
-              textAlign: 'center',
-              marginBottom: '24px',
-              background: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <div style={{ fontSize: '4rem', marginBottom: '8px' }}>🎯</div>
-            <h1
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <div
               style={{
-                fontFamily: "'Space Mono', monospace",
-                fontWeight: 700,
-                fontSize: 'clamp(1.8rem, 5vw, 3rem)',
-                marginBottom: '8px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              Ready to Play?
-            </h1>
-            <p style={{ color: '#6B7280', fontSize: '16px', marginBottom: '28px' }}>
-              Choose your difficulty and start a new game!
-            </p>
+              <button
+                onClick={() => window.history.back()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  border: '2.5px solid #0A0A0A',
+                  borderRadius: '8px',
+                  background: 'white',
+                  fontWeight: 800,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  boxShadow: '3px 3px 0 #0A0A0A',
+                }}
+              >
+                ← Back to Home
+              </button>
 
-            {/* Inline difficulty selector in start banner */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', marginBottom: '24px' }}>
-              {['EASY', 'MEDIUM', 'HARD', 'EXPERT', 'MASTER', 'EXTREME'].map((d) => {
-                const colors = { EASY: '#22C55E', MEDIUM: '#3B82F6', HARD: '#F97316', EXPERT: '#EF4444', MASTER: '#7C3AED', EXTREME: '#0A0A0A' };
-                const active = difficulty === d;
-                return (
-                  <button
-                    key={d}
-                    onClick={() => handleDifficultyChange(d)}
-                    style={{
-                      padding: '10px 20px',
-                      border: '3px solid #0A0A0A',
-                      borderRadius: '8px',
-                      fontWeight: 800,
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      background: active ? colors[d] : 'white',
-                      color: active ? (d === 'EXTREME' ? '#FFD60A' : 'white') : '#0A0A0A',
-                      boxShadow: active ? '4px 4px 0 #0A0A0A' : '2px 2px 0 #0A0A0A',
-                      transition: 'all 0.1s',
-                    }}
-                  >
-                    {d}
-                  </button>
-                );
-              })}
+              <span
+                style={{
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  background: '#FFD60A',
+                  border: '2px solid #0A0A0A',
+                  borderRadius: '20px',
+                  padding: '3px 12px',
+                  boxShadow: '2px 2px 0 #0A0A0A',
+                }}
+              >
+                CLASSIC MODE
+              </span>
             </div>
 
-            <button
-              onClick={() => handleNewGame(difficulty)}
-              disabled={loading}
+            <div
+              className="neo-card"
               style={{
-                padding: '16px 48px',
-                border: '3px solid #0A0A0A',
-                borderRadius: '12px',
-                fontWeight: 800,
-                fontSize: '18px',
-                cursor: loading ? 'wait' : 'pointer',
-                background: '#FF3CAC',
-                color: 'white',
-                boxShadow: '6px 6px 0 #0A0A0A',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '10px',
-                transition: 'all 0.1s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translate(-3px,-3px)';
-                e.currentTarget.style.boxShadow = '9px 9px 0 #0A0A0A';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translate(0,0)';
-                e.currentTarget.style.boxShadow = '6px 6px 0 #0A0A0A';
+                padding: '44px 32px',
+                textAlign: 'center',
+                marginBottom: '24px',
+                background: 'white',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              {loading ? <Loader2 size={20} className="animate-spin" /> : <Zap size={20} />}
-              {loading ? 'Starting...' : 'Start Game'}
-            </button>
+              <div
+                style={{
+                  width: '72px',
+                  height: '72px',
+                  borderRadius: '16px',
+                  border: '3.5px solid #0A0A0A',
+                  background: '#FF3CAC',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                  boxShadow: '4px 4px 0 #0A0A0A',
+                  fontSize: '2.2rem',
+                }}
+              >
+                🎯
+              </div>
+
+              <h1
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontWeight: 800,
+                  fontSize: 'clamp(2rem, 5vw, 3rem)',
+                  marginBottom: '8px',
+                  color: '#0A0A0A',
+                }}
+              >
+                Choose Difficulty
+              </h1>
+              <p style={{ color: '#6B7280', fontSize: '16px', marginBottom: '32px', fontWeight: 600 }}>
+                Select your preferred challenge level to generate a new puzzle
+              </p>
+
+              {/* Grid of difficulty buttons */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+                  gap: '12px',
+                  maxWidth: '640px',
+                  margin: '0 auto 36px',
+                }}
+              >
+                {[
+                  { name: 'EASY', label: 'Easy', color: '#22C55E', hint: 'Beginners' },
+                  { name: 'MEDIUM', label: 'Medium', color: '#3B82F6', hint: 'Standard' },
+                  { name: 'HARD', label: 'Hard', color: '#F97316', hint: 'Challenging' },
+                  { name: 'EXPERT', label: 'Expert', color: '#EF4444', hint: 'Advanced' },
+                  { name: 'MASTER', label: 'Master', color: '#7C3AED', hint: 'Very Hard' },
+                  { name: 'EXTREME', label: 'Extreme', color: '#0A0A0A', textColor: '#FFD60A', hint: 'Maximum' },
+                ].map((item) => {
+                  const active = difficulty === item.name;
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => handleDifficultyChange(item.name)}
+                      style={{
+                        padding: '14px 10px',
+                        border: '3px solid #0A0A0A',
+                        borderRadius: '10px',
+                        fontWeight: 900,
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        background: active ? item.color : 'white',
+                        color: active ? (item.textColor || 'white') : '#0A0A0A',
+                        boxShadow: active ? '5px 5px 0 #0A0A0A' : '3px 3px 0 #0A0A0A',
+                        transform: active ? 'translate(-2px, -2px)' : 'none',
+                        transition: 'all 0.1s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '2px',
+                      }}
+                    >
+                      <span>{item.label}</span>
+                      <span style={{ fontSize: '10px', opacity: 0.8, fontWeight: 700 }}>{item.hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Start Game Action */}
+              <button
+                id="start-classic-game-btn"
+                onClick={() => handleNewGame(difficulty)}
+                disabled={loading}
+                style={{
+                  padding: '18px 56px',
+                  border: '3.5px solid #0A0A0A',
+                  borderRadius: '14px',
+                  fontWeight: 900,
+                  fontSize: '20px',
+                  cursor: loading ? 'wait' : 'pointer',
+                  background: '#FF3CAC',
+                  color: 'white',
+                  boxShadow: '6px 6px 0 #0A0A0A',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  transition: 'all 0.1s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translate(-3px,-3px)';
+                  e.currentTarget.style.boxShadow = '9px 9px 0 #0A0A0A';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translate(0,0)';
+                  e.currentTarget.style.boxShadow = '6px 6px 0 #0A0A0A';
+                }}
+              >
+                {loading ? <Loader2 size={24} className="animate-spin" /> : <Zap size={24} />}
+                {loading ? 'Generating Puzzle...' : 'Start Game'}
+              </button>
+            </div>
           </div>
         )}
 
