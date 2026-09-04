@@ -61,7 +61,7 @@ export default function Header() {
       }}
     >
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        
+
         {/* ── Left: Brand Logo ── */}
         <Link to="/" className="flex items-center gap-2 no-underline group">
           <div
@@ -118,7 +118,7 @@ export default function Header() {
 
         {/* ── Desktop Navigation ── */}
         <div className="hidden md:flex items-center gap-4">
-          
+
           {/* Leaderboard Item */}
           <Link
             to="/leaderboard"
@@ -206,7 +206,7 @@ export default function Header() {
                 >
                   <User size={14} color="#0A0A0A" />
                 </div>
-                <span>👤 {username}</span>
+                <span> {username}</span>
                 <ChevronDown
                   size={16}
                   style={{
@@ -277,7 +277,7 @@ export default function Header() {
                       style={dropdownLinkStyle(pathname === '/my-scores')}
                     >
                       <BarChart3 size={16} color="#0A0A0A" />
-                      <span>📊 My Profile</span>
+                      <span>My Profile</span>
                     </Link>
 
                     <Link
@@ -285,7 +285,7 @@ export default function Header() {
                       style={dropdownLinkStyle(false)}
                     >
                       <Target size={16} color="#0A0A0A" />
-                      <span>🎯 My Scores</span>
+                      <span> My Scores</span>
                     </Link>
 
                     <Link
@@ -293,7 +293,7 @@ export default function Header() {
                       style={dropdownLinkStyle(pathname === '/awards')}
                     >
                       <Award size={16} color="#0A0A0A" />
-                      <span>🏅 Achievements</span>
+                      <span> Achievements</span>
                     </Link>
 
                     <Link
@@ -301,7 +301,7 @@ export default function Header() {
                       style={dropdownLinkStyle(pathname === '/rules')}
                     >
                       <BookOpen size={16} color="#0A0A0A" />
-                      <span>📖 How to Play & Rules</span>
+                      <span> How to Play & Rules</span>
                     </Link>
 
                     <div
@@ -327,7 +327,7 @@ export default function Header() {
                       }}
                     >
                       <LogOut size={16} color="#EF4444" />
-                      <span style={{ fontWeight: 800 }}>🚪 Logout</span>
+                      <span style={{ fontWeight: 800 }}>Logout</span>
                     </button>
                   </div>
                 </div>
@@ -395,7 +395,7 @@ export default function Header() {
             style={mobileLinkStyle(pathname === '/leaderboard')}
           >
             <Trophy size={18} />
-            <span>🏆 Leaderboard</span>
+            <span> Leaderboard</span>
           </Link>
 
           {authenticated && (
@@ -415,7 +415,7 @@ export default function Header() {
                 style={mobileLinkStyle(pathname === '/awards')}
               >
                 <Award size={18} />
-                <span>🏅 Achievements</span>
+                <span> Achievements</span>
               </Link>
 
               <Link
