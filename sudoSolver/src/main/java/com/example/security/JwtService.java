@@ -43,7 +43,7 @@ public class JwtService {
     }
 
     public String extractEmail(String token) {
-
+        System.out.println(getClaims(token).getSubject() + " -> " + getClaims(token).getIssuedAt());
         return getClaims(token).getSubject();
     }
 

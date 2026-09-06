@@ -6,7 +6,10 @@ import NumberPad from '../components/NumberPad';
 import GameControls from '../components/GameControls';
 import GameOverModal from '../components/GameOverModal';
 import CompletionModal from '../components/CompletionModal';
+import AchievementModal from '../components/AchievementModal';
+import LevelUpModal from '../components/LevelUpModal';
 import { createGame, makeMove, submitScore } from '../services/sudokuApi';
+import { getUserLevel, storeUserXPAndLevel } from '../services/authApi';
 import { Loader2, AlertCircle, Zap } from 'lucide-react';
 
 // ─── Initial state ───────────────────────────────────────────
@@ -45,6 +48,12 @@ export default function GamePage() {
   const [submittedScore, setSubmittedScore] = useState(null);
   const [scoreLoading, setScoreLoading] = useState(false);
   const [scoreError, setScoreError] = useState(null);
+  const [unlockedAchievements, setUnlockedAchievements] = useState([]);
+  const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [newLevelReached, setNewLevelReached] = useState(null);
+  const [gameXP, setGameXP] = useState(null);
+  const [gameLevel, setGameLevel] = useState(null);
   const timerRef = useRef(null);
 
   // ─── Timer management ────────────────────────────────────────
@@ -73,8 +82,34 @@ export default function GamePage() {
       })
         .then((data) => {
           if (isMounted) {
-            setSubmittedScore(data?.score ?? data?.finalScore ?? data?.points ?? 0);
+            const finalScore = data?.score ?? data?.finalScore ?? data?.points ?? 0;
+            setSubmittedScore(finalScore);
             setScoreLoading(false);
+
+            // Backend is the source of truth for XP, level, and achievements
+            const prevLevel = getUserLevel();
+            const newTotalXP = data?.totalXP !== undefined ? data.totalXP : null;
+            const newLevel = data?.level !== undefined ? data.level : null;
+
+            if (newTotalXP !== null || newLevel !== null) {
+              storeUserXPAndLevel(newTotalXP, newLevel);
+              setGameXP(newTotalXP);
+              setGameLevel(newLevel);
+            }
+
+            const leveledUp = newLevel && newLevel > prevLevel;
+            if (leveledUp) {
+              setNewLevelReached(newLevel);
+            }
+
+            // Unlocked achievements notification
+            const newAchList = data?.newAchievements || data?.unlockedAchievements || [];
+            if (Array.isArray(newAchList) && newAchList.length > 0) {
+              setUnlockedAchievements(newAchList);
+              setShowAchievementModal(true);
+            } else if (leveledUp) {
+              setShowLevelUpModal(true);
+            }
           }
         })
         .catch((err) => {
@@ -97,6 +132,12 @@ export default function GamePage() {
     setSubmittedScore(null);
     setScoreLoading(false);
     setScoreError(null);
+    setUnlockedAchievements([]);
+    setShowAchievementModal(false);
+    setShowLevelUpModal(false);
+    setNewLevelReached(null);
+    setGameXP(null);
+    setGameLevel(null);
     const diff = difficultyOverride || state.difficulty;
     try {
       const data = await createGame(diff);
@@ -626,11 +667,37 @@ export default function GamePage() {
           onNewGame={() => handleNewGame(difficulty)}
         />
       )}
+
+      {/* Achievement Unlocked Notification Modal */}
+      {showAchievementModal && unlockedAchievements.length > 0 && (
+        <AchievementModal
+          achievements={unlockedAchievements}
+          onClose={() => {
+            setShowAchievementModal(false);
+            if (newLevelReached) {
+              setShowLevelUpModal(true);
+            }
+          }}
+        />
+      )}
+
+      {/* Level Up Notification Modal */}
+      {showLevelUpModal && newLevelReached && (
+        <LevelUpModal
+          newLevel={newLevelReached}
+          onClose={() => {
+            setShowLevelUpModal(false);
+          }}
+        />
+      )}
+
       {gameStatus === 'COMPLETED' && (
         <CompletionModal
           score={submittedScore}
           scoreLoading={scoreLoading}
           scoreError={scoreError}
+          totalXP={gameXP}
+          level={gameLevel}
           mistakes={mistakes}
           timerSeconds={timerSeconds}
           difficulty={difficulty}

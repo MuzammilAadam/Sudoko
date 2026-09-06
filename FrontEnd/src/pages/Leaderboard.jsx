@@ -42,7 +42,6 @@ export default function Leaderboard() {
         err.message?.includes('403')
       ) {
         clearAuth();
-        localStorage.removeItem('sudoku_jwt');
         navigate('/login');
       } else {
         setError(err.message || 'Failed to load leaderboard data.');

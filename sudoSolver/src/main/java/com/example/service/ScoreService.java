@@ -17,13 +17,16 @@ public class ScoreService {
 
     private final ScoreRepository scoreRepository;
     private final UserRepository userRepository;
+    private final AchievementService achievementService;
 
     public ScoreService(
             ScoreRepository scoreRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            AchievementService achievementService
     ) {
         this.scoreRepository = scoreRepository;
         this.userRepository = userRepository;
+        this.achievementService = achievementService;
     }
 
 
@@ -84,8 +87,43 @@ public class ScoreService {
         Score savedScore =
                 scoreRepository.save(score);
 
+        // Update user stats
+        user.setGamesPlayed(user.getGamesPlayed() + 1);
+        user.setGamesWon(user.getGamesWon() + 1);
+        user.setTotalScore(user.getTotalScore() + calculatedScore);
 
-        return convertToResponse(savedScore);
+        // Check and award achievements and XP
+        java.util.List<com.example.model.Achievement> unlocked =
+                achievementService.checkAchievements(
+                        user,
+                        request.getDifficulty().name(),
+                        request.getMistakes(),
+                        true
+                );
+
+        userRepository.save(user);
+
+        java.util.List<com.example.dto.AchievementResponse> achievementResponses =
+                unlocked.stream()
+                        .map(a -> new com.example.dto.AchievementResponse(
+                                a.getName(),
+                                a.getDescription(),
+                                a.getXpReward(),
+                                a.getRarity()
+                        ))
+                        .toList();
+
+        return new ScoreResponse(
+                savedScore.getId(),
+                savedScore.getUser().getUsername(),
+                savedScore.getScore(),
+                savedScore.getDifficulty(),
+                savedScore.getMistakes(),
+                savedScore.getTimeTaken(),
+                user.getTotalXP(),
+                user.getLevel(),
+                achievementResponses
+        );
     }
 
 
@@ -173,7 +211,10 @@ public class ScoreService {
                 score.getScore(),
                 score.getDifficulty(),
                 score.getMistakes(),
-                score.getTimeTaken()
+                score.getTimeTaken(),
+                score.getUser() != null ? score.getUser().getTotalXP() : 0,
+                score.getUser() != null ? score.getUser().getLevel() : 1,
+                new java.util.ArrayList<>()
         );
     }
 }

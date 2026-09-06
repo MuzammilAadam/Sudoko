@@ -39,6 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         // Get Authorization header
+        System.out.println("Session Printing :-> "+request.getSession());
         String authHeader = request.getHeader("Authorization");
 
         // Check if header contains Bearer token

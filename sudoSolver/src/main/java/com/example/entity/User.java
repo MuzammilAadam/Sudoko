@@ -30,6 +30,21 @@ public class User {
 
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    private int totalXP = 0;
+
+    @Column(nullable = false)
+    private int level = 1;
+
+    @Column(nullable = false)
+    private int gamesPlayed = 0;
+
+    @Column(nullable = false)
+    private int gamesWon = 0;
+
+    @Column(nullable = false)
+    private int totalScore = 0;
+
     public long getId() {
         return id;
     }
@@ -98,6 +113,46 @@ public class User {
     @PreUpdate
     public void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public int getTotalXP() {
+        return totalXP;
+    }
+
+    public void setTotalXP(int totalXP) {
+        this.totalXP = totalXP;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
+    public int getGamesPlayed() {
+        return gamesPlayed;
+    }
+
+    public void setGamesPlayed(int gamesPlayed) {
+        this.gamesPlayed = gamesPlayed;
+    }
+
+    public int getGamesWon() {
+        return gamesWon;
+    }
+
+    public void setGamesWon(int gamesWon) {
+        this.gamesWon = gamesWon;
+    }
+
+    public int getTotalScore() {
+        return totalScore;
+    }
+
+    public void setTotalScore(int totalScore) {
+        this.totalScore = totalScore;
     }
 
 }
