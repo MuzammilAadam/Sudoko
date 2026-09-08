@@ -95,17 +95,17 @@ public class SudokuGenerator {
         // A standard 9x9 Sudoku puzzle cannot have fewer than 17 clues while maintaining a valid solution.
         return switch (difficulty.toUpperCase()) {
 
-            case "EASY" -> 50;
+            case "EASY" -> 74;
 
-            case "MEDIUM" -> 40;
+            case "MEDIUM" -> 66;
 
-            case "HARD" -> 32;
+            case "HARD" -> 60;
 
-            case "EXPERT" -> 28;
+            case "EXPERT" -> 56;
 
-            case "MASTER" -> 24 ;
+            case "MASTER" -> 50 ;
 
-            case "EXTREME" -> 22;
+            case "EXTREME" -> 42;
 
             default -> 40;
         };
