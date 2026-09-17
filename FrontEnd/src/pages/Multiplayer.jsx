@@ -21,7 +21,7 @@ import {
 
 export default function MultiplayerPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const username = getUsername() || 'Player';
 
   // ─── Room & Board State ─────────────────────────────────────
@@ -67,14 +67,39 @@ export default function MultiplayerPage() {
   }, [username]);
 
   // ─── Handle URL Query Params Auto Action ───────────────────
+  /*
+   * =========================================================================================
+   * BUG LOCATION & ROOT CAUSE:
+   * When navigating to "/multiplayer?action=create", searchParams contained action='create'.
+   * On initial mount, handleCreateRoom() was called and roomId was set.
+   * BUT searchParams was NEVER cleared from the URL!
+   * When the user clicked "Exit Room", handleExitRoom() set roomId to null.
+   * Because 'roomId' was in this useEffect's dependency array, setting roomId to null
+   * immediately re-triggered this useEffect!
+   * In the re-triggered effect:
+   *   action === 'create' was still in searchParams, and !roomId was true again!
+   * This caused handleCreateRoom() to be called AGAIN, automatically creating a brand
+   * new room with a new ID!
+   *
+   * FIX:
+   * 1. Call setSearchParams({}, { replace: true }) as soon as the action ('create' or 'code')
+   *    is consumed so it does not linger in the URL.
+   * 2. In handleExitRoom(), also call setSearchParams({}, { replace: true }) and notify the backend
+   *    via leaveRoom() before disconnecting.
+   * =========================================================================================
+   */
   useEffect(() => {
     const action = searchParams.get('action');
     const code = searchParams.get('code');
 
     if (action === 'create' && !roomId && !apiLoading) {
+      // Clear URL params immediately to avoid re-triggering on exit
+      setSearchParams({}, { replace: true });
       handleCreateRoom();
     } else if (code && !roomId) {
       const formatted = code.trim().toUpperCase();
+      // Clear URL params immediately
+      setSearchParams({}, { replace: true });
       setJoinInput(formatted);
       setRoomId(formatted);
       setInitialBoard(null);
@@ -82,7 +107,7 @@ export default function MultiplayerPage() {
       setGameFinished(false);
       setLastMessage(`Connecting to room ${formatted}...`);
     }
-  }, [searchParams, handleCreateRoom, roomId, apiLoading]);
+  }, [searchParams, setSearchParams, handleCreateRoom, roomId, apiLoading]);
 
   // ─── WebSocket Update Handler ───────────────────────────────
   const handleGameUpdate = useCallback(
@@ -123,7 +148,7 @@ export default function MultiplayerPage() {
   }, []);
 
   // ─── WebSocket Hook Initialization ─────────────────────────
-  const { isConnected, isConnecting, connectionError, sendMove, disconnect } = useMultiplayerSocket(
+  const { isConnected, isConnecting, connectionError, sendMove, leaveRoom, disconnect } = useMultiplayerSocket(
     roomId,
     username,
     handleGameUpdate,
@@ -147,8 +172,17 @@ export default function MultiplayerPage() {
   };
 
   // ─── Exit Room Handler ──────────────────────────────────────
+  /*
+   * BUG FIX:
+   * 1. Send /app/game.leave message to backend over WebSocket so backend removes player
+   *    from active room and notifies opponent.
+   * 2. Clear searchParams to prevent URL query re-triggering new room creation.
+   * 3. Disconnect WebSocket cleanly and reset all room/board states.
+   */
   const handleExitRoom = () => {
+    leaveRoom();
     disconnect();
+    setSearchParams({}, { replace: true });
     setRoomId(null);
     setInitialBoard(null);
     setCurrentBoard(null);

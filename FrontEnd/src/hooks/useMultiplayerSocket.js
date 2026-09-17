@@ -174,6 +174,26 @@ export function useMultiplayerSocket(roomId, username, onGameUpdate, onError) {
   );
 
   /**
+   * leaveRoom — Send leave notification to backend destination: /app/game.leave
+   * Allows backend to remove player from active game state and notify opponent.
+   */
+  const leaveRoom = useCallback(() => {
+    if (clientRef.current && clientRef.current.connected && roomId && username) {
+      try {
+        clientRef.current.publish({
+          destination: '/app/game.leave',
+          body: JSON.stringify({
+            roomId,
+            username,
+          }),
+        });
+      } catch (err) {
+        console.warn('[STOMP Warning] Failed to publish /app/game.leave frame:', err);
+      }
+    }
+  }, [roomId, username]);
+
+  /**
    * Disconnect cleanly from room
    */
   const disconnect = useCallback(() => {
@@ -190,6 +210,7 @@ export function useMultiplayerSocket(roomId, username, onGameUpdate, onError) {
     isConnecting,
     connectionError,
     sendMove,
+    leaveRoom,
     disconnect,
   };
 }

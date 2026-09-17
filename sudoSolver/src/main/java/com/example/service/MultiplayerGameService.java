@@ -6,15 +6,23 @@ import com.example.dto.MultiplayerMove;
 import com.example.model.MultiplayerGame;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class MultiplayerGameService {
 
+    /*
+     * ISSUE IDENTIFIED & FIXED:
+     * Previously: private final Map<String, MultiplayerGame> games = new HashMap<>();
+     * HashMap is not thread-safe. Spring WebSocket message broker processes incoming
+     * STOMP messages (/app/game.join, /app/game.move) concurrently across multiple worker threads.
+     * Simultaneous joins, moves, or room creations cause race conditions or ConcurrentModificationException.
+     * FIX: Use ConcurrentHashMap to guarantee safe concurrent access.
+     */
     private final Map<String, MultiplayerGame> games =
-            new HashMap<>();
+            new ConcurrentHashMap<>();
 
 
     public MultiplayerGame createGame(
@@ -65,33 +73,78 @@ public class MultiplayerGameService {
         MultiplayerGame game =
                 getGame(request.getRoomId());
 
+        synchronized (game) {
+            // Maximum 2 players
+            if (!game.getPlayerScores()
+                    .containsKey(request.getUsername())) {
 
-        // Maximum 2 players
-        if (!game.getPlayerScores()
-                .containsKey(request.getUsername())) {
+                if (game.getPlayerScores().size() >= 2) {
 
-            if (game.getPlayerScores().size() >= 2) {
+                    throw new RuntimeException(
+                            "Game room is full"
+                    );
+                }
 
-                throw new RuntimeException(
-                        "Game room is full"
-                );
+                game.getPlayerScores()
+                        .put(
+                                request.getUsername(),
+                                0
+                        );
             }
 
-            game.getPlayerScores()
-                    .put(
-                            request.getUsername(),
-                            0
-                    );
+
+            return createUpdate(
+                    game,
+                    "Player joined: "
+                            + request.getUsername(),
+                    request.getUsername(),
+                    true
+            );
+        }
+    }
+
+
+    /*
+     * ISSUE IDENTIFIED & FIXED:
+     * Previously, there was NO leave room logic in the backend WebSocket service.
+     * When a player exited:
+     * 1. Their username remained indefinitely in playerScores, locking room size at 2.
+     * 2. This prevented any new player or re-joining player from entering ("Game room is full").
+     * 3. The other player was never notified that their opponent disconnected or exited.
+     * 4. Empty rooms were never cleaned up, causing memory leaks over time.
+     *
+     * FIX:
+     * 1. Remove the player from playerScores.
+     * 2. If the room is now empty, purge it from the 'games' map.
+     * 3. If an opponent remains, broadcast a GameUpdate notifying them that the player left.
+     */
+    public GameUpdate leaveGame(
+            String roomId,
+            String username
+    ) {
+        MultiplayerGame game = games.get(roomId);
+        if (game == null) {
+            return null;
         }
 
+        synchronized (game) {
+            if (username != null) {
+                game.getPlayerScores().remove(username);
+            }
 
-        return createUpdate(
-                game,
-                "Player joined: "
-                        + request.getUsername(),
-                request.getUsername(),
-                true
-        );
+            // If no players remain, clean up room to prevent memory leaks
+            if (game.getPlayerScores().isEmpty()) {
+                games.remove(roomId);
+                return null;
+            }
+
+            return createUpdate(
+                    game,
+                    "Player " + (username != null ? username : "Opponent") + " left the room.",
+                    username,
+                    false
+            );
+        }
     }
 
 
@@ -103,8 +156,10 @@ public class MultiplayerGameService {
         MultiplayerGame game =
                 getGame(move.getRoomId());
 
-
-        if (game.isGameFinished()) {
+        // ISSUE IDENTIFIED & FIXED: Multiple players sending moves simultaneously can cause race conditions on board state & scores.
+        // FIX: Synchronize on the game object to guarantee atomic move processing.
+        synchronized (game) {
+            if (game.isGameFinished()) {
 
             return createUpdate(
                     game,
@@ -209,6 +264,7 @@ public class MultiplayerGameService {
                     username,
                     false
             );
+        }
         }
     }
 

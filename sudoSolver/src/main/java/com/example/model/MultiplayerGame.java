@@ -1,6 +1,6 @@
 package com.example.model;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
 public class MultiplayerGame {
@@ -13,8 +13,8 @@ public class MultiplayerGame {
     // Original solution used for validation
     private int[][] solution;
 
-    // Players and their scores
-    private Map<String, Integer> playerScores = new HashMap<>();
+    // Players and their scores (ConcurrentHashMap ensures thread-safe updates across WebSocket broker threads)
+    private Map<String, Integer> playerScores = new ConcurrentHashMap<>();
 
     private boolean gameFinished = false;
 
