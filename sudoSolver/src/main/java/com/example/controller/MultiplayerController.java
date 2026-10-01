@@ -12,7 +12,6 @@ import org.springframework.stereotype.Controller;
 public class MultiplayerController {
 
     private final MultiplayerGameService multiplayerGameService;
-
     private final SimpMessagingTemplate messagingTemplate;
 
 
@@ -26,7 +25,6 @@ public class MultiplayerController {
         this.messagingTemplate =
                 messagingTemplate;
     }
-
 
     /*
      * ISSUE IDENTIFIED & FIXED:

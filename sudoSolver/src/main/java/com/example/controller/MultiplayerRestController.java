@@ -61,8 +61,6 @@ public class MultiplayerRestController {
                 "board",
                 game.getBoard()
         );
-
-
         return ResponseEntity.ok(
                 response
         );

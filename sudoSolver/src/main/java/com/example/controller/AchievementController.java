@@ -50,10 +50,7 @@ public class AchievementController {
         return repository.findByUserId(userId);
     }
 
-    /**
-     * GET /api/achievements/me
-     * Fetch unlocked achievements for the currently authenticated user.
-     */
+//   Achievement Get API
     @GetMapping("/me")
     public List<UserAchievement> getMyAchievements() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
