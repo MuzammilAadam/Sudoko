@@ -1,0 +1,16 @@
+# Dependencies & Build Output
+node_modules/
+dist/
+target/
+
+# IDE / System files
+.idea/
+.vscode/
+*.log
+.DS_Store
+
+# Agent & Generated Output Folders
+brag-output/
+.agents/
+.agent/
+skills-lock.json

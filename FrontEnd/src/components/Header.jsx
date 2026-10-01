@@ -11,6 +11,10 @@ import {
   Target,
   Menu,
   X,
+  Play,
+  Users,
+  Grid3x3,
+  LogIn,
 } from 'lucide-react';
 import { clearAuth, getUsername, isAuthenticated } from '../services/authApi';
 
@@ -47,7 +51,12 @@ export default function Header() {
     navigate('/login', { replace: true });
   };
 
-  const isLeaderboardActive = pathname === '/leaderboard';
+  const navItems = [
+    { label: 'PLAY', path: '/classic', icon: Play, color: '#FF3CAC' },
+    { label: 'MULTIPLAYER', path: '/multiplayer', icon: Users, color: '#FFD60A' },
+    { label: 'LEADERBOARD', path: '/leaderboard', icon: Trophy, color: '#2563EB' },
+    { label: 'HOW TO PLAY', path: '/rules', icon: BookOpen, color: '#22C55E' },
+  ];
 
   return (
     <header
@@ -62,24 +71,44 @@ export default function Header() {
     >
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
 
-        {/* ── Left: Brand Logo ── */}
-        <Link to="/" className="flex items-center gap-2 no-underline group">
+        {/* ── Left: Brand Logo & Icon ── */}
+        <Link to="/" className="flex items-center gap-3 no-underline group">
+          <div
+            style={{
+              width: '42px',
+              height: '42px',
+              background: '#FFD60A',
+              border: '3px solid #0A0A0A',
+              borderRadius: '10px',
+              boxShadow: '3px 3px 0 #0A0A0A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'transform 0.1s ease',
+            }}
+            className="group-hover:translate-x-[-1px] group-hover:translate-y-[-1px]"
+          >
+            <Grid3x3 size={24} color="#0A0A0A" strokeWidth={2.5} />
+          </div>
+
           <div
             style={{
               background: '#FF3CAC',
               border: '3px solid #0A0A0A',
               borderRadius: '10px',
               boxShadow: '3px 3px 0 #0A0A0A',
-              padding: '5px 12px',
+              padding: '4px 12px',
               transition: 'transform 0.1s ease',
+              display: 'flex',
+              alignItems: 'center',
             }}
             className="group-hover:translate-x-[-1px] group-hover:translate-y-[-1px]"
           >
             <span
               style={{
                 fontFamily: "'Space Mono', monospace",
-                fontWeight: 800,
-                fontSize: '1.3rem',
+                fontWeight: 900,
+                fontSize: '1.25rem',
                 color: 'white',
                 letterSpacing: '-1px',
               }}
@@ -89,8 +118,8 @@ export default function Header() {
             <span
               style={{
                 fontFamily: "'Space Mono', monospace",
-                fontWeight: 800,
-                fontSize: '1.3rem',
+                fontWeight: 900,
+                fontSize: '1.25rem',
                 color: '#FFD60A',
                 letterSpacing: '-1px',
               }}
@@ -98,67 +127,59 @@ export default function Header() {
               KU
             </span>
           </div>
-          <span
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontWeight: 800,
-              fontSize: '0.7rem',
-              background: '#FFD60A',
-              border: '2px solid #0A0A0A',
-              borderRadius: '20px',
-              padding: '2px 8px',
-              boxShadow: '2px 2px 0 #0A0A0A',
-              display: 'none',
-            }}
-            className="sm:inline-block"
-          >
-            ★ GAME PLATFORM
-          </span>
         </Link>
 
-        {/* ── Desktop Navigation ── */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* ── Center/Right Navigation ── */}
+        <div className="hidden lg:flex items-center gap-3">
+          {navItems.map((item) => {
+            const isActive = pathname === item.path;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 15px',
+                  border: '2.5px solid #0A0A0A',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '13px',
+                  letterSpacing: '0.5px',
+                  textDecoration: 'none',
+                  color: '#0A0A0A',
+                  background: isActive ? item.color : 'white',
+                  boxShadow: isActive ? '3.5px 3.5px 0 #0A0A0A' : '2.5px 2.5px 0 #0A0A0A',
+                  transition: 'all 0.1s ease',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = item.color;
+                    e.currentTarget.style.transform = 'translate(-2px,-2px)';
+                    e.currentTarget.style.boxShadow = '4.5px 4.5px 0 #0A0A0A';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.transform = 'translate(0,0)';
+                    e.currentTarget.style.boxShadow = '2.5px 2.5px 0 #0A0A0A';
+                  }
+                }}
+              >
+                <Icon size={16} color="#0A0A0A" strokeWidth={2.5} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
 
-          {/* Leaderboard Item */}
-          <Link
-            to="/leaderboard"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 18px',
-              border: '2.5px solid #0A0A0A',
-              borderRadius: '10px',
-              fontWeight: 800,
-              fontSize: '14px',
-              textDecoration: 'none',
-              color: '#0A0A0A',
-              background: isLeaderboardActive ? '#FFD60A' : 'white',
-              boxShadow: isLeaderboardActive ? '4px 4px 0 #0A0A0A' : '3px 3px 0 #0A0A0A',
-              transition: 'all 0.1s ease',
-              fontFamily: "'Space Grotesk', sans-serif",
-            }}
-            onMouseEnter={(e) => {
-              if (!isLeaderboardActive) {
-                e.currentTarget.style.background = '#FFD60A';
-                e.currentTarget.style.transform = 'translate(-2px,-2px)';
-                e.currentTarget.style.boxShadow = '5px 5px 0 #0A0A0A';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isLeaderboardActive) {
-                e.currentTarget.style.background = 'white';
-                e.currentTarget.style.transform = 'translate(0,0)';
-                e.currentTarget.style.boxShadow = '3px 3px 0 #0A0A0A';
-              }
-            }}
-          >
-            <Trophy size={18} color="#0A0A0A" />
-            <span>Leaderboard</span>
-          </Link>
-
-          {/* User Profile Dropdown */}
-          {authenticated && (
+        {/* ── Right Profile / Auth Area ── */}
+        <div className="hidden lg:flex items-center gap-3">
+          {authenticated ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 id="user-profile-menu-btn"
@@ -167,13 +188,13 @@ export default function Header() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '8px 16px',
+                  padding: '7px 14px',
                   border: '2.5px solid #0A0A0A',
                   borderRadius: '10px',
-                  background: dropdownOpen ? '#FF3CAC' : '#F5EED8',
+                  background: dropdownOpen ? '#FF3CAC' : '#FFD60A',
                   color: dropdownOpen ? 'white' : '#0A0A0A',
                   fontWeight: 800,
-                  fontSize: '14px',
+                  fontSize: '13.5px',
                   cursor: 'pointer',
                   boxShadow: '3px 3px 0 #0A0A0A',
                   transition: 'all 0.1s ease',
@@ -182,7 +203,7 @@ export default function Header() {
                 onMouseEnter={(e) => {
                   if (!dropdownOpen) {
                     e.currentTarget.style.transform = 'translate(-2px,-2px)';
-                    e.currentTarget.style.boxShadow = '5px 5px 0 #0A0A0A';
+                    e.currentTarget.style.boxShadow = '4.5px 4.5px 0 #0A0A0A';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -196,17 +217,17 @@ export default function Header() {
                   style={{
                     width: '24px',
                     height: '24px',
-                    borderRadius: '50%',
+                    borderRadius: '6px',
                     border: '2px solid #0A0A0A',
-                    background: '#FFD60A',
+                    background: 'white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <User size={14} color="#0A0A0A" />
+                  <User size={14} color="#0A0A0A" strokeWidth={2.5} />
                 </div>
-                <span> {username}</span>
+                <span>{username}</span>
                 <ChevronDown
                   size={16}
                   style={{
@@ -223,7 +244,7 @@ export default function Header() {
                     position: 'absolute',
                     right: 0,
                     top: 'calc(100% + 8px)',
-                    width: '240px',
+                    width: '230px',
                     background: 'white',
                     border: '3px solid #0A0A0A',
                     borderRadius: '12px',
@@ -249,13 +270,14 @@ export default function Header() {
                       style={{
                         width: '32px',
                         height: '32px',
-                        borderRadius: '50%',
+                        borderRadius: '8px',
                         border: '2px solid #0A0A0A',
                         background: '#FFD60A',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontWeight: 800,
+                        fontWeight: 900,
+                        fontFamily: "'Space Mono', monospace",
                       }}
                     >
                       {username.charAt(0).toUpperCase()}
@@ -264,7 +286,7 @@ export default function Header() {
                       <div style={{ fontWeight: 800, fontSize: '14px', color: '#0A0A0A', lineHeight: '1.2' }}>
                         {username}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600 }}>
+                      <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: 700 }}>
                         Sudoku Player
                       </div>
                     </div>
@@ -272,36 +294,19 @@ export default function Header() {
 
                   {/* Dropdown Links */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <Link
-                      to="/my-scores"
-                      style={dropdownLinkStyle(pathname === '/my-scores')}
-                    >
-                      <BarChart3 size={16} color="#0A0A0A" />
-                      <span>My Profile</span>
+                    <Link to="/my-scores" style={dropdownLinkStyle(pathname === '/my-scores')}>
+                      <BarChart3 size={16} color="#0A0A0A" strokeWidth={2.5} />
+                      <span>My Profile & Scores</span>
                     </Link>
 
-                    <Link
-                      to="/my-scores"
-                      style={dropdownLinkStyle(false)}
-                    >
-                      <Target size={16} color="#0A0A0A" />
-                      <span> My Scores</span>
+                    <Link to="/awards" style={dropdownLinkStyle(pathname === '/awards')}>
+                      <Award size={16} color="#0A0A0A" strokeWidth={2.5} />
+                      <span>Achievements</span>
                     </Link>
 
-                    <Link
-                      to="/awards"
-                      style={dropdownLinkStyle(pathname === '/awards')}
-                    >
-                      <Award size={16} color="#0A0A0A" />
-                      <span> Achievements</span>
-                    </Link>
-
-                    <Link
-                      to="/rules"
-                      style={dropdownLinkStyle(pathname === '/rules')}
-                    >
-                      <BookOpen size={16} color="#0A0A0A" />
-                      <span> How to Play & Rules</span>
+                    <Link to="/rules" style={dropdownLinkStyle(pathname === '/rules')}>
+                      <BookOpen size={16} color="#0A0A0A" strokeWidth={2.5} />
+                      <span>How to Play</span>
                     </Link>
 
                     <div
@@ -326,18 +331,40 @@ export default function Header() {
                         boxShadow: '2px 2px 0 #0A0A0A',
                       }}
                     >
-                      <LogOut size={16} color="#EF4444" />
+                      <LogOut size={16} color="#EF4444" strokeWidth={2.5} />
                       <span style={{ fontWeight: 800 }}>Logout</span>
                     </button>
                   </div>
                 </div>
               )}
             </div>
+          ) : (
+            <Link
+              to="/login"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 16px',
+                border: '2.5px solid #0A0A0A',
+                borderRadius: '10px',
+                background: '#FFD60A',
+                color: '#0A0A0A',
+                fontWeight: 800,
+                fontSize: '13.5px',
+                textDecoration: 'none',
+                boxShadow: '3px 3px 0 #0A0A0A',
+                transition: 'all 0.1s ease',
+              }}
+            >
+              <LogIn size={16} color="#0A0A0A" strokeWidth={2.5} />
+              <span>LOG IN</span>
+            </Link>
           )}
         </div>
 
         {/* ── Mobile Hamburger ── */}
-        <div className="md:hidden flex items-center gap-2">
+        <div className="lg:hidden flex items-center gap-2">
           <button
             onClick={() => setMobileMenuOpen((v) => !v)}
             aria-label="Toggle navigation menu"
@@ -346,11 +373,11 @@ export default function Header() {
               border: '2.5px solid #0A0A0A',
               borderRadius: '8px',
               background: '#FFD60A',
-              boxShadow: '2px 2px 0 #0A0A0A',
+              boxShadow: '2.5px 2.5px 0 #0A0A0A',
               cursor: 'pointer',
             }}
           >
-            {mobileMenuOpen ? <X size={22} color="#0A0A0A" /> : <Menu size={22} color="#0A0A0A" />}
+            {mobileMenuOpen ? <X size={22} color="#0A0A0A" strokeWidth={2.5} /> : <Menu size={22} color="#0A0A0A" strokeWidth={2.5} />}
           </button>
         </div>
       </div>
@@ -360,13 +387,13 @@ export default function Header() {
         <div
           style={{
             borderTop: '3px solid #0A0A0A',
-            background: 'white',
+            background: '#FFFBF0',
             padding: '16px',
             display: 'flex',
             flexDirection: 'column',
             gap: '10px',
           }}
-          className="md:hidden"
+          className="lg:hidden"
         >
           {/* User Header */}
           {authenticated && (
@@ -383,65 +410,76 @@ export default function Header() {
                 marginBottom: '6px',
               }}
             >
-              <User size={20} color="#0A0A0A" />
-              <span style={{ fontWeight: 800, fontSize: '15px' }}>👤 {username}</span>
+              <User size={20} color="#0A0A0A" strokeWidth={2.5} />
+              <span style={{ fontWeight: 800, fontSize: '15px' }}>{username}</span>
             </div>
           )}
 
-          {/* Navigation Items */}
-          <Link
-            to="/leaderboard"
-            onClick={() => setMobileMenuOpen(false)}
-            style={mobileLinkStyle(pathname === '/leaderboard')}
-          >
-            <Trophy size={18} />
-            <span> Leaderboard</span>
-          </Link>
+          {/* Main Navigation Links */}
+          {navItems.map((item) => {
+            const isActive = pathname === item.path;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
+                style={mobileLinkStyle(isActive, item.color)}
+              >
+                <Icon size={18} strokeWidth={2.5} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
 
           {authenticated && (
             <>
+              <div style={{ height: '2px', background: '#0A0A0A', margin: '4px 0', opacity: 0.15 }} />
+
               <Link
                 to="/my-scores"
                 onClick={() => setMobileMenuOpen(false)}
-                style={mobileLinkStyle(pathname === '/my-scores')}
+                style={mobileLinkStyle(pathname === '/my-scores', '#60A5FA')}
               >
-                <BarChart3 size={18} />
-                <span>📊 My Profile & Scores</span>
+                <BarChart3 size={18} strokeWidth={2.5} />
+                <span>MY PROFILE & SCORES</span>
               </Link>
 
               <Link
                 to="/awards"
                 onClick={() => setMobileMenuOpen(false)}
-                style={mobileLinkStyle(pathname === '/awards')}
+                style={mobileLinkStyle(pathname === '/awards', '#FF85D1')}
               >
-                <Award size={18} />
-                <span> Achievements</span>
-              </Link>
-
-              <Link
-                to="/rules"
-                onClick={() => setMobileMenuOpen(false)}
-                style={mobileLinkStyle(pathname === '/rules')}
-              >
-                <BookOpen size={18} />
-                <span>📖 Rules & Guide</span>
+                <Award size={18} strokeWidth={2.5} />
+                <span>ACHIEVEMENTS</span>
               </Link>
 
               <button
                 onClick={handleLogout}
                 style={{
-                  ...mobileLinkStyle(false),
+                  ...mobileLinkStyle(false, '#FEE2E2'),
                   background: '#FEE2E2',
                   color: '#EF4444',
                   cursor: 'pointer',
                   border: '2.5px solid #0A0A0A',
-                  marginTop: '6px',
+                  marginTop: '4px',
                 }}
               >
-                <LogOut size={18} color="#EF4444" />
-                <span style={{ fontWeight: 800 }}>🚪 Logout</span>
+                <LogOut size={18} color="#EF4444" strokeWidth={2.5} />
+                <span style={{ fontWeight: 800 }}>LOGOUT</span>
               </button>
             </>
+          )}
+
+          {!authenticated && (
+            <Link
+              to="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              style={mobileLinkStyle(true, '#FFD60A')}
+            >
+              <LogIn size={18} strokeWidth={2.5} />
+              <span>LOG IN / SIGN UP</span>
+            </Link>
           )}
         </div>
       )}
@@ -456,8 +494,8 @@ function dropdownLinkStyle(isActive) {
     gap: '10px',
     padding: '10px 12px',
     borderRadius: '8px',
-    fontWeight: 700,
-    fontSize: '13.5px',
+    fontWeight: 800,
+    fontSize: '13px',
     textDecoration: 'none',
     color: '#0A0A0A',
     background: isActive ? '#FFD60A' : 'transparent',
@@ -467,21 +505,22 @@ function dropdownLinkStyle(isActive) {
   };
 }
 
-function mobileLinkStyle(isActive) {
+function mobileLinkStyle(isActive, activeBg = '#FFD60A') {
   return {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '12px',
     padding: '12px 16px',
     border: '2.5px solid #0A0A0A',
     borderRadius: '10px',
     fontWeight: 800,
-    fontSize: '15px',
+    fontSize: '14px',
     textDecoration: 'none',
     color: '#0A0A0A',
-    background: isActive ? '#FFD60A' : '#FFFBF0',
+    background: isActive ? activeBg : 'white',
     boxShadow: '3px 3px 0 #0A0A0A',
     fontFamily: "'Space Grotesk', sans-serif",
   };
 }
+
 
