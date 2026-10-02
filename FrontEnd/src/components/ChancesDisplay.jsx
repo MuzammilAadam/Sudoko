@@ -1,11 +1,6 @@
 import { Heart, HeartCrack } from 'lucide-react';
 
-/**
- * ChancesDisplay — shows remaining chances as hearts.
- * Props:
- *  remaining - number (0-3)
- *  total     - number (default 3)
- */
+
 export default function ChancesDisplay({ remaining = 3, total = 3 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
