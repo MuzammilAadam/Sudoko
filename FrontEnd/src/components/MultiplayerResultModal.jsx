@@ -102,7 +102,7 @@ export default function MultiplayerResultModal({
             color: '#0A0A0A',
           }}
         >
-          {isTie ? "IT'S A TIE! 🤝" : isCurrentUserWinner ? 'YOU WON! 🎉' : `${winner || 'Opponent'} WON! 🏆`}
+          {isTie ? "IT'S A TIE!" : isCurrentUserWinner ? 'YOU WON!' : `${winner || 'Opponent'} WON!`}
         </h2>
 
         <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '20px', fontWeight: 600 }}>

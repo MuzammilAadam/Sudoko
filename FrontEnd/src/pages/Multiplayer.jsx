@@ -1,10 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SudokuBoard from '../components/SudokuBoard';
 import NumberPad from '../components/NumberPad';
 import MultiplayerResultModal from '../components/MultiplayerResultModal';
+import { SudokuSearchGrid, MatchFoundTransition } from '../components/MatchmakingAnimation';
 import { createMultiplayerRoom } from '../services/multiplayerApi';
 import { useMultiplayerSocket } from '../hooks/useMultiplayerSocket';
+import { useMatchmakingSocket } from '../hooks/useMatchmakingSocket';
 import { getUsername } from '../services/authApi';
 import {
   Users,
@@ -17,6 +19,13 @@ import {
   Zap,
   ArrowLeft,
   Info,
+  Swords,
+  XCircle,
+  Gamepad2,
+  RotateCcw,
+  Play,
+  X,
+  Radio,
 } from 'lucide-react';
 
 export default function MultiplayerPage() {
@@ -45,6 +54,53 @@ export default function MultiplayerPage() {
   const [copied, setCopied] = useState(false);
   const EMPTY_SET = new Set();
   const EMPTY_OBJ = {};
+
+  // ─── Matchmaking State & Sockets ─────────────────────────────
+  const matchTransitionTimeoutRef = useRef(null);
+  const resetToIdleRef = useRef(null);
+
+  const handleMatchFound = useCallback((response) => {
+    console.log('[Multiplayer] Match found! Transitioning to game in 1.8s:', response);
+    matchTransitionTimeoutRef.current = setTimeout(() => {
+      if (response.roomId) {
+        setRoomId(response.roomId);
+        if (response.board) {
+          setInitialBoard(response.board);
+          setCurrentBoard(response.board);
+        }
+        setPlayerScores({
+          [username]: 0,
+          [response.opponent || 'Opponent']: 0,
+        });
+        setGameFinished(false);
+        setLastMessage(`Match started with ${response.opponent || 'Opponent'}!`);
+        setLastValid(true);
+        if (resetToIdleRef.current) {
+          resetToIdleRef.current();
+        }
+      }
+    }, 1800);
+  }, [username]);
+
+  const {
+    matchState,
+    matchData,
+    errorMessage: matchmakingError,
+    joinQueue,
+    cancelQueue,
+    resetToIdle,
+  } = useMatchmakingSocket(username, {
+    onMatchFound: handleMatchFound,
+  });
+
+  useEffect(() => {
+    resetToIdleRef.current = resetToIdle;
+    return () => {
+      if (matchTransitionTimeoutRef.current) {
+        clearTimeout(matchTransitionTimeoutRef.current);
+      }
+    };
+  }, [resetToIdle]);
 
   // ─── Create Room Handler ────────────────────────────────────
   const handleCreateRoom = useCallback(async () => {
@@ -92,10 +148,13 @@ export default function MultiplayerPage() {
     const action = searchParams.get('action');
     const code = searchParams.get('code');
 
-    if (action === 'create' && !roomId && !apiLoading) {
+    if (action === 'create' && !roomId && !apiLoading && matchState === 'IDLE') {
       // Clear URL params immediately to avoid re-triggering on exit
       setSearchParams({}, { replace: true });
       handleCreateRoom();
+    } else if (action === 'matchmake' && !roomId && matchState === 'IDLE') {
+      setSearchParams({}, { replace: true });
+      joinQueue();
     } else if (code && !roomId) {
       const formatted = code.trim().toUpperCase();
       // Clear URL params immediately
@@ -107,7 +166,7 @@ export default function MultiplayerPage() {
       setGameFinished(false);
       setLastMessage(`Connecting to room ${formatted}...`);
     }
-  }, [searchParams, setSearchParams, handleCreateRoom, roomId, apiLoading]);
+  }, [searchParams, setSearchParams, handleCreateRoom, joinQueue, roomId, apiLoading, matchState]);
 
   // ─── WebSocket Update Handler ───────────────────────────────
   const handleGameUpdate = useCallback(
@@ -182,6 +241,7 @@ export default function MultiplayerPage() {
   const handleExitRoom = () => {
     leaveRoom();
     disconnect();
+    resetToIdle();
     setSearchParams({}, { replace: true });
     setRoomId(null);
     setInitialBoard(null);
@@ -303,69 +363,413 @@ export default function MultiplayerPage() {
 
         {/* ── LOBBY VIEW (No Active Room) ── */}
         {!roomId && (
-          <div style={{ maxWidth: '700px', margin: '20px auto 0' }}>
+          <div style={{ maxWidth: '780px', margin: '20px auto 0' }}>
+            {/* Header Card */}
             <div
               className="neo-card"
               style={{
-                padding: '36px 28px',
+                padding: '28px 24px',
                 background: 'white',
                 textAlign: 'center',
-                marginBottom: '24px',
+                marginBottom: '20px',
               }}
             >
-              <div style={{ fontSize: '3.5rem', marginBottom: '8px' }}>⚔️</div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '56px',
+                  height: '56px',
+                  background: '#FFD60A',
+                  border: '3px solid #0A0A0A',
+                  borderRadius: '50%',
+                  boxShadow: '3px 3px 0 #0A0A0A',
+                  marginBottom: '12px',
+                }}
+              >
+                <Swords size={28} color="#0A0A0A" />
+              </div>
               <h1
                 style={{
                   fontFamily: "'Space Mono', monospace",
-                  fontWeight: 800,
-                  fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
-                  marginBottom: '8px',
+                  fontWeight: 900,
+                  fontSize: 'clamp(1.8rem, 4vw, 2.4rem)',
+                  marginBottom: '6px',
                   color: '#0A0A0A',
                 }}
               >
-                PLAY WITH FRIENDS
+                MULTIPLAYER SUDOKU
               </h1>
-              <p style={{ color: '#4B5563', fontSize: '15px', marginBottom: '28px', fontWeight: 600 }}>
-                Challenge another player in a live Sudoku competition.
+              <p style={{ color: '#4B5563', fontSize: '15px', margin: 0, fontWeight: 600 }}>
+                Compete head-to-head in real time on identical Sudoku boards.
               </p>
+            </div>
 
-              {/* Two Option Cards: Create or Join */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                  gap: '20px',
-                  textAlign: 'left',
-                }}
-              >
-                {/* Option 1: Create Game */}
-                <div
-                  style={{
-                    border: '3px solid #0A0A0A',
-                    borderRadius: '12px',
-                    padding: '24px 20px',
-                    background: '#FFFBF0',
-                    boxShadow: '4px 4px 0 #0A0A0A',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <PlusCircle size={22} color="#FF3CAC" />
-                      <h3 style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '1.2rem' }}>
-                        Create Room
-                      </h3>
-                    </div>
-                    <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '20px' }}>
-                      Host a new multiplayer match and generate a room code to invite a friend.
-                    </p>
+            {/* Option 1: PLAY ONLINE (Random Matchmaking) Hero Card */}
+            <div
+              className="neo-card"
+              style={{
+                padding: '28px 24px',
+                background:
+                  matchState === 'MATCH_FOUND'
+                    ? '#FFFBF0'
+                    : matchState === 'SEARCHING'
+                    ? '#FFFBF0'
+                    : '#FFF9D2',
+                border: '3px solid #0A0A0A',
+                boxShadow: '6px 6px 0 #0A0A0A',
+                marginBottom: '20px',
+                textAlign: 'center',
+                position: 'relative',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {matchState === 'IDLE' && (
+                <div>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: '#FF3CAC',
+                      color: 'white',
+                      border: '2px solid #0A0A0A',
+                      padding: '3px 12px',
+                      borderRadius: '20px',
+                      fontWeight: 800,
+                      fontSize: '11px',
+                      fontFamily: "'Space Mono', monospace",
+                      boxShadow: '2px 2px 0 #0A0A0A',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    <Radio size={14} /> LIVE MATCHMAKING
                   </div>
 
+                  <h2
+                    style={{
+                      fontFamily: "'Space Mono', monospace",
+                      fontWeight: 900,
+                      fontSize: '1.8rem',
+                      color: '#0A0A0A',
+                      margin: '0 0 8px 0',
+                    }}
+                  >
+                    PLAY ONLINE
+                  </h2>
+
+                  <p
+                    style={{
+                      fontSize: '15px',
+                      color: '#4B5563',
+                      fontWeight: 600,
+                      maxWidth: '460px',
+                      margin: '0 auto 20px',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Find a random opponent and compete in real time.
+                  </p>
+
                   <button
-                    onClick={handleCreateRoom}
+                    id="play-online-btn"
+                    onClick={joinQueue}
                     disabled={apiLoading}
+                    style={{
+                      padding: '16px 36px',
+                      border: '3px solid #0A0A0A',
+                      borderRadius: '12px',
+                      background: '#FFD60A',
+                      color: '#0A0A0A',
+                      fontWeight: 900,
+                      fontSize: '17px',
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      cursor: 'pointer',
+                      boxShadow: '4px 4px 0 #0A0A0A',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      transition: 'all 0.1s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translate(-2px, -2px)';
+                      e.currentTarget.style.boxShadow = '6px 6px 0 #0A0A0A';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translate(0, 0)';
+                      e.currentTarget.style.boxShadow = '4px 4px 0 #0A0A0A';
+                    }}
+                  >
+                    <Play size={20} fill="#0A0A0A" />
+                    PLAY ONLINE
+                  </button>
+                </div>
+              )}
+
+              {matchState === 'SEARCHING' && (
+                <div>
+                  <h2
+                    style={{
+                      fontFamily: "'Space Mono', monospace",
+                      fontWeight: 900,
+                      fontSize: '1.8rem',
+                      color: '#0A0A0A',
+                      margin: '0 0 6px 0',
+                    }}
+                  >
+                    FINDING OPPONENT
+                  </h2>
+
+                  <p style={{ color: '#4B5563', fontSize: '14px', fontWeight: 600, margin: '0 0 16px 0' }}>
+                    Searching for another player...
+                  </p>
+
+                  <SudokuSearchGrid />
+
+                  <button
+                    id="cancel-matchmaking-btn"
+                    onClick={cancelQueue}
+                    style={{
+                      padding: '12px 28px',
+                      border: '3px solid #0A0A0A',
+                      borderRadius: '10px',
+                      background: '#FEE2E2',
+                      color: '#EF4444',
+                      fontWeight: 800,
+                      fontSize: '14px',
+                      fontFamily: "'Space Mono', monospace",
+                      cursor: 'pointer',
+                      boxShadow: '4px 4px 0 #0A0A0A',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.1s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translate(-2px, -2px)';
+                      e.currentTarget.style.boxShadow = '6px 6px 0 #0A0A0A';
+                      e.currentTarget.style.background = '#EF4444';
+                      e.currentTarget.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translate(0, 0)';
+                      e.currentTarget.style.boxShadow = '4px 4px 0 #0A0A0A';
+                      e.currentTarget.style.background = '#FEE2E2';
+                      e.currentTarget.style.color = '#EF4444';
+                    }}
+                  >
+                    <X size={16} strokeWidth={3} />
+                    CANCEL SEARCH
+                  </button>
+                </div>
+              )}
+
+              {matchState === 'MATCH_FOUND' && (
+                <MatchFoundTransition currentUsername={username} opponent={matchData?.opponent} />
+              )}
+
+              {matchState === 'ERROR' && (
+                <div style={{ padding: '10px 0' }}>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '52px',
+                      height: '52px',
+                      background: '#FEE2E2',
+                      border: '3px solid #EF4444',
+                      borderRadius: '50%',
+                      margin: '0 auto 12px',
+                    }}
+                  >
+                    <AlertCircle size={28} color="#EF4444" />
+                  </div>
+
+                  <h2
+                    style={{
+                      fontFamily: "'Space Mono', monospace",
+                      fontWeight: 900,
+                      fontSize: '1.5rem',
+                      color: '#0A0A0A',
+                      margin: '0 0 6px 0',
+                    }}
+                  >
+                    MATCHMAKING FAILED
+                  </h2>
+
+                  <p style={{ color: '#4B5563', fontSize: '14px', fontWeight: 600, margin: '0 0 20px 0' }}>
+                    {matchmakingError || 'Unable to find an opponent right now.'}
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={joinQueue}
+                      style={{
+                        padding: '12px 24px',
+                        border: '3px solid #0A0A0A',
+                        borderRadius: '10px',
+                        background: '#FFD60A',
+                        color: '#0A0A0A',
+                        fontWeight: 800,
+                        fontSize: '14px',
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        cursor: 'pointer',
+                        boxShadow: '4px 4px 0 #0A0A0A',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <RotateCcw size={16} />
+                      TRY AGAIN
+                    </button>
+                    <button
+                      onClick={resetToIdle}
+                      style={{
+                        padding: '12px 20px',
+                        border: '3px solid #0A0A0A',
+                        borderRadius: '10px',
+                        background: 'white',
+                        color: '#0A0A0A',
+                        fontWeight: 800,
+                        fontSize: '14px',
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        cursor: 'pointer',
+                        boxShadow: '4px 4px 0 #0A0A0A',
+                      }}
+                    >
+                      BACK TO LOBBY
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Options 2 & 3: CREATE ROOM & JOIN ROOM */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gap: '20px',
+                textAlign: 'left',
+                opacity: matchState === 'SEARCHING' || matchState === 'MATCH_FOUND' ? 0.45 : 1,
+                pointerEvents: matchState === 'SEARCHING' || matchState === 'MATCH_FOUND' ? 'none' : 'auto',
+                transition: 'opacity 0.2s',
+              }}
+            >
+              {/* Option 2: Create Game */}
+              <div
+                style={{
+                  border: '3px solid #0A0A0A',
+                  borderRadius: '12px',
+                  padding: '24px 20px',
+                  background: '#FFFBF0',
+                  boxShadow: '4px 4px 0 #0A0A0A',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <PlusCircle size={22} color="#FF3CAC" />
+                    <h3 style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '1.2rem' }}>
+                      Create Room
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '20px' }}>
+                    Host a new multiplayer match and generate a room code to invite a friend.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleCreateRoom}
+                  disabled={apiLoading || matchState === 'SEARCHING'}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    border: '3px solid #0A0A0A',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '15px',
+                    cursor: apiLoading ? 'wait' : 'pointer',
+                    background: '#FF3CAC',
+                    color: 'white',
+                    boxShadow: '4px 4px 0 #0A0A0A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    transition: 'all 0.1s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translate(-2px,-2px)';
+                    e.currentTarget.style.boxShadow = '6px 6px 0 #0A0A0A';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translate(0,0)';
+                    e.currentTarget.style.boxShadow = '4px 4px 0 #0A0A0A';
+                  }}
+                >
+                  {apiLoading ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+                  {apiLoading ? 'Creating Room...' : 'Create Multiplayer Game'}
+                </button>
+              </div>
+
+              {/* Option 3: Join Game */}
+              <div
+                style={{
+                  border: '3px solid #0A0A0A',
+                  borderRadius: '12px',
+                  padding: '24px 20px',
+                  background: '#F0FDF4',
+                  boxShadow: '4px 4px 0 #0A0A0A',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <LogIn size={22} color="#22C55E" />
+                    <h3 style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '1.2rem' }}>
+                      Join Room
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '16px' }}>
+                    Enter an existing 6-character room ID shared by your friend.
+                  </p>
+                </div>
+
+                <form onSubmit={handleJoinRoom} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="e.g. ABC123"
+                    value={joinInput}
+                    onChange={(e) => setJoinInput(e.target.value.toUpperCase())}
+                    disabled={matchState === 'SEARCHING'}
+                    style={{
+                      padding: '12px',
+                      border: '3px solid #0A0A0A',
+                      borderRadius: '8px',
+                      fontFamily: "'Space Mono', monospace",
+                      fontWeight: 800,
+                      fontSize: '16px',
+                      textAlign: 'center',
+                      letterSpacing: '2px',
+                      outline: 'none',
+                      textTransform: 'uppercase',
+                      background: 'white',
+                      boxShadow: '2px 2px 0 #0A0A0A',
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!joinInput.trim() || matchState === 'SEARCHING'}
                     style={{
                       width: '100%',
                       padding: '14px',
@@ -373,116 +777,33 @@ export default function MultiplayerPage() {
                       borderRadius: '10px',
                       fontWeight: 800,
                       fontSize: '15px',
-                      cursor: apiLoading ? 'wait' : 'pointer',
-                      background: '#FF3CAC',
-                      color: 'white',
+                      cursor: !joinInput.trim() ? 'not-allowed' : 'pointer',
+                      background: '#FFD60A',
+                      color: '#0A0A0A',
                       boxShadow: '4px 4px 0 #0A0A0A',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
                       fontFamily: "'Space Grotesk', sans-serif",
+                      opacity: !joinInput.trim() ? 0.6 : 1,
                       transition: 'all 0.1s',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translate(-2px,-2px)';
-                      e.currentTarget.style.boxShadow = '6px 6px 0 #0A0A0A';
+                      if (joinInput.trim()) {
+                        e.currentTarget.style.transform = 'translate(-2px,-2px)';
+                        e.currentTarget.style.boxShadow = '6px 6px 0 #0A0A0A';
+                      }
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translate(0,0)';
                       e.currentTarget.style.boxShadow = '4px 4px 0 #0A0A0A';
                     }}
                   >
-                    {apiLoading ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-                    {apiLoading ? 'Creating Room...' : 'Create Multiplayer Game'}
+                    <Users size={18} />
+                    Join Game Room
                   </button>
-                </div>
-
-                {/* Option 2: Join Game */}
-                <div
-                  style={{
-                    border: '3px solid #0A0A0A',
-                    borderRadius: '12px',
-                    padding: '24px 20px',
-                    background: '#F0FDF4',
-                    boxShadow: '4px 4px 0 #0A0A0A',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <LogIn size={22} color="#22C55E" />
-                      <h3 style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '1.2rem' }}>
-                        Join Room
-                      </h3>
-                    </div>
-                    <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '16px' }}>
-                      Enter an existing 6-character room ID shared by your friend.
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleJoinRoom} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      placeholder="e.g. ABC123"
-                      value={joinInput}
-                      onChange={(e) => setJoinInput(e.target.value.toUpperCase())}
-                      style={{
-                        padding: '12px',
-                        border: '3px solid #0A0A0A',
-                        borderRadius: '8px',
-                        fontFamily: "'Space Mono', monospace",
-                        fontWeight: 800,
-                        fontSize: '16px',
-                        textAlign: 'center',
-                        letterSpacing: '2px',
-                        outline: 'none',
-                        textTransform: 'uppercase',
-                        background: 'white',
-                        boxShadow: '2px 2px 0 #0A0A0A',
-                      }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={!joinInput.trim()}
-                      style={{
-                        width: '100%',
-                        padding: '14px',
-                        border: '3px solid #0A0A0A',
-                        borderRadius: '10px',
-                        fontWeight: 800,
-                        fontSize: '15px',
-                        cursor: !joinInput.trim() ? 'not-allowed' : 'pointer',
-                        background: '#FFD60A',
-                        color: '#0A0A0A',
-                        boxShadow: '4px 4px 0 #0A0A0A',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        fontFamily: "'Space Grotesk', sans-serif",
-                        opacity: !joinInput.trim() ? 0.6 : 1,
-                        transition: 'all 0.1s',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (joinInput.trim()) {
-                          e.currentTarget.style.transform = 'translate(-2px,-2px)';
-                          e.currentTarget.style.boxShadow = '6px 6px 0 #0A0A0A';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translate(0,0)';
-                        e.currentTarget.style.boxShadow = '4px 4px 0 #0A0A0A';
-                      }}
-                    >
-                      <Users size={18} />
-                      Join Game Room
-                    </button>
-                  </form>
-                </div>
+                </form>
               </div>
             </div>
 
@@ -495,11 +816,13 @@ export default function MultiplayerPage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
+                marginTop: '20px',
               }}
             >
               <Info size={24} color="#0A0A0A" />
               <div style={{ fontSize: '13px', color: '#0A0A0A', lineHeight: '1.4' }}>
-                <strong>Multiplayer Scoring Rules:</strong> Correct move = <strong>+10 pts</strong> | Wrong move = <strong>-5 pts</strong>. Board updates in real-time for both players!
+                <strong>Multiplayer Scoring Rules:</strong> Correct move = <strong>+10 pts</strong> | Wrong move ={' '}
+                <strong>-5 pts</strong>. Board updates in real-time for both players!
               </div>
             </div>
           </div>
@@ -681,7 +1004,13 @@ export default function MultiplayerPage() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {lastValid === false ? '❌' : lastValid === true ? '⚡' : 'ℹ️'}
+                  {lastValid === false ? (
+                    <XCircle size={18} color="#EF4444" />
+                  ) : lastValid === true ? (
+                    <Zap size={18} color="#22C55E" />
+                  ) : (
+                    <Info size={18} color="#2563EB" />
+                  )}
                   <span>
                     {lastPlayer ? <strong>{lastPlayer}: </strong> : ''}
                     {lastMessage}
@@ -771,17 +1100,21 @@ export default function MultiplayerPage() {
 
                 {/* Info Card */}
                 <div className="neo-card" style={{ padding: '16px', background: '#F5EED8', marginTop: '16px' }}>
-                  <p
+                  <div
                     style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
                       fontWeight: 800,
                       fontSize: '12px',
                       letterSpacing: '1px',
                       textTransform: 'uppercase',
                       marginBottom: '10px',
+                      color: '#0A0A0A',
                     }}
                   >
-                    🎮 Multiplayer Controls
-                  </p>
+                    <Gamepad2 size={16} color="#0A0A0A" /> Multiplayer Controls
+                  </div>
                   <ul style={{ fontSize: '12px', color: '#6B7280', lineHeight: '1.8', paddingLeft: '16px', margin: 0 }}>
                     <li>Click cell or use Arrow Keys to select</li>
                     <li>Press 1-9 to submit move to server</li>
